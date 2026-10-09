@@ -49,7 +49,7 @@ button,select,input{font:inherit;color:var(--ink)}
 .btn.primary{background:var(--accent);color:#fff;border-color:transparent}
 .banner{margin:14px 0 0;padding:10px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--border);color:var(--ink-2);font-size:12.5px;display:flex;gap:10px;align-items:flex-start}
 .banner b{color:var(--ink)}
-nav.tabs{display:flex;gap:2px;overflow-x:auto;margin:16px 0 0;border-bottom:1px solid var(--border);scrollbar-width:none}
+nav.tabs{display:flex;flex-wrap:wrap;gap:2px;margin:16px 0 0;border-bottom:1px solid var(--border);scrollbar-width:none}
 nav.tabs button{background:none;border:0;padding:10px 14px;color:var(--ink-2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;font-weight:500}
 nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
 .filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:14px 0}
@@ -63,7 +63,7 @@ nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(-
 .g21{grid-template-columns:2fr 1fr}
 .g12{grid-template-columns:1fr 2fr}
 @media (max-width:1100px){.g6{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(2,1fr)}.g21,.g12,.g3{grid-template-columns:1fr}}
-@media (max-width:640px){.g6,.g4,.g2{grid-template-columns:1fr 1fr}.g2.stack{grid-template-columns:1fr}h1{font-size:20px}}
+@media (max-width:640px){nav.tabs{flex-wrap:nowrap;overflow-x:auto}.g6,.g4,.g2{grid-template-columns:1fr 1fr}.g2.stack{grid-template-columns:1fr}h1{font-size:20px}}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;min-width:0}
 .card h3{margin:0 0 2px;font-size:14px;font-weight:600}
 .card .hint{color:var(--muted);font-size:12px;margin:0 0 10px}
@@ -79,6 +79,7 @@ th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--grid);verti
 th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--surface);z-index:1}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 tbody tr:hover{background:var(--surface-2)}
+tr.grp td{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:700;padding-top:14px;background:transparent!important}
 tr.sel{background:var(--surface-2)}
 .scroll{max-height:520px;overflow:auto;border-radius:8px}
 .status{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;white-space:nowrap}
@@ -118,36 +119,46 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .tt{position:fixed;pointer-events:none;background:var(--surface);border:1px solid var(--border);box-shadow:0 6px 20px rgba(0,0,0,.25);padding:6px 9px;border-radius:8px;font-size:12px;z-index:50;display:none}
 footer{margin-top:28px;color:var(--muted);font-size:12px;border-top:1px solid var(--border);padding-top:14px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .sr{position:absolute;left:-9999px}
+@media print{
+  :root{color-scheme:light;--page:#fff;--surface:#fff;--surface-2:#f4f4f2;--ink:#000;--ink-2:#333;--border:#ccc;--grid:#ddd}
+  nav.tabs,.filters,#themeBtn,#printBtn,.tt{display:none!important}
+  .card{break-inside:avoid;box-shadow:none}
+  .scroll{max-height:none!important;overflow:visible!important}
+  body{font-size:11px}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header class="top">
   <div>
-    <div class="eyebrow">Community Health Center · Quality &amp; Operations</div>
+    <div class="eyebrow">Community Health Center · Quality, Operations &amp; Finance</div>
     <h1>Quality Command Center</h1>
-    <div class="sub">UDS clinical quality, access, care-gap closure &amp; Medicaid redetermination — built around Alivio Medical Center's sites and programs</div>
+    <div class="sub">UDS &amp; HEDIS quality, health equity, access, productivity, collections, forecasting and data integrity — built around Alivio Medical Center's sites and programs</div>
   </div>
   <div class="hdr-right">
     <span class="pill"><span class="dot"></span>Measurement period CY2026 · data through <b id="asof"></b></span>
     <span class="pill" id="daysleft"></span>
+    <button class="btn" id="printBtn" aria-label="Print this view as a summary">⎙ Print view</button>
     <button class="btn" id="themeBtn" aria-label="Toggle light or dark theme">◐ Theme</button>
   </div>
 </header>
 
 <div class="banner" role="note">
   <span>ⓘ</span>
-  <span><b>Demonstration build with synthetic data.</b> Every patient, visit and rate below is generated (seeded, reproducible) to mirror the shape of a 4-site FQHC panel — no PHI, and no claim about Alivio's real performance. Measure logic follows HRSA UDS Table 6B/7 and CMS eCQM definitions; national comparisons are labelled with their source year. In production, the generator is swapped for an eClinicalWorks extract (see <a href="#" data-goto="method">Methodology</a>).</span>
+  <span><b>Demonstration build with synthetic data.</b> Every patient, visit and rate below is generated (seeded, reproducible) to mirror the shape of a 4-site FQHC panel — no PHI, and no claim about Alivio's real performance. Measure logic follows HRSA UDS Table 6B/7 and CMS eCQM definitions; national comparisons are labelled with their source year. In production, the generator is swapped for an extract from eClinicalWorks and the practice-management system (see <a href="#" data-goto="method">Methodology</a>).</span>
 </div>
 
 <nav class="tabs" role="tablist" id="tabs">
   <button role="tab" data-tab="overview" aria-selected="true">Executive overview</button>
   <button role="tab" data-tab="quality">UDS clinical quality</button>
+  <button role="tab" data-tab="equity">Health equity</button>
   <button role="tab" data-tab="access">Access &amp; no-shows</button>
+  <button role="tab" data-tab="finance">Finance &amp; productivity</button>
   <button role="tab" data-tab="gaps">Care-gap worklist</button>
   <button role="tab" data-tab="sim">Gap-closure planner</button>
   <button role="tab" data-tab="medicaid">Medicaid redetermination</button>
-  <button role="tab" data-tab="dq">Data quality</button>
+  <button role="tab" data-tab="dq">Data quality &amp; UDS</button>
   <button role="tab" data-tab="method">Methodology</button>
 </nav>
 
@@ -169,7 +180,7 @@ footer{margin-top:28px;color:var(--muted);font-size:12px;border-top:1px solid va
   <div class="grid g3 mt">
     <div class="card"><h3>No-show rate by month</h3><p class="hint">Share of scheduled medical appointments not kept.</p><div class="chart short"><canvas id="cNsMonth"></canvas></div></div>
     <div class="card"><h3>Payer mix · unique patients</h3><p class="hint">Sliding-fee / uninsured share drives grant and PPS strategy.</p><div class="chart short"><canvas id="cPayer"></canvas></div></div>
-    <div class="card"><h3>Measures vs target</h3><p class="hint">9 UDS measures tracked; target editable on the quality tab.</p><div class="chart short"><canvas id="cScore"></canvas></div></div>
+    <div class="card"><h3>Measures vs target</h3><p class="hint">13 UDS measures across 4 domains; targets editable on the quality tab.</p><div class="chart short"><canvas id="cScore"></canvas></div></div>
   </div>
 </section>
 
@@ -183,7 +194,47 @@ footer{margin-top:28px;color:var(--muted);font-size:12px;border-top:1px solid va
   <div class="grid g3 mt">
     <div class="card"><h3 id="qTrendTitle">Cumulative rate by month</h3><p class="hint">YTD rate as numerator events accrue (prior-year lookback screenings count from January).</p><div class="chart"><canvas id="cQTrend"></canvas></div></div>
     <div class="card"><h3>By site</h3><p class="hint">Same measure, all sites — ignores the site filter so sites stay comparable.</p><div class="chart"><canvas id="cQSite"></canvas></div></div>
-    <div class="card"><h3>Equity view</h3><p class="hint">Rate by preferred language and payer. Gaps over 5 pts are flagged.</p><div class="chart"><canvas id="cQEq"></canvas></div></div>
+    <div class="card"><h3>Equity view</h3><p class="hint">Rate by preferred language and payer. Gaps over 5 pts are flagged. Full matrix on the Health equity tab.</p><div class="chart"><canvas id="cQEq"></canvas></div></div>
+  </div>
+  <div class="card mt">
+    <h3>Value-based care view · Medicaid patients on HEDIS-aligned measures</h3>
+    <p class="hint">Medicaid managed-care quality incentives are scored on HEDIS, not UDS. The specs differ (e.g. HEDIS uses continuous enrollment and claims plus EHR data), so these UDS-logic rates are a directional early warning, not the plan's score. Reconcile against MCO gap reports.</p>
+    <div class="scroll" style="max-height:none"><table id="vbcTable"></table></div>
+  </div>
+</section>
+
+<!-- EQUITY -->
+<section class="tabpanel" id="p-equity">
+  <div class="grid">
+    <div class="card">
+      <h3>Disparity matrix · rate by population group</h3>
+      <p class="hint">Each cell is the measure rate for that group; colour shows the gap to the all-patient rate in the direction that matters (inverse measures flipped). Groups with fewer than 30 patients are suppressed. The site filter applies; payer and language filters are ignored here because they are the columns.</p>
+      <div class="scroll" style="max-height:none"><table id="eqTable"></table></div>
+      <div class="legend" id="eqLegend"></div>
+    </div>
+    <div class="card"><h3>Largest disparities</h3><p class="hint">Ranked by gap × patients affected — the number of patients who would need to meet the measure to close the gap.</p><div class="insights g3 grid" id="eqTop"></div></div>
+  </div>
+</section>
+
+<!-- FINANCE -->
+<section class="tabpanel" id="p-finance">
+  <div class="grid g4" id="finKpis"></div>
+  <div class="grid g2 mt stack">
+    <div class="card"><h3>Provider productivity · visits per clinical FTE per day</h3><p class="hint">Completed visits ÷ (clinical FTE × clinic days). Assumes 186 clinic days Jan–Sep and 88% of FTE time in clinic (PTO, admin, CME). Target is editable.</p>
+      <div class="filters" style="padding:0 0 8px"><label>Target visits/day<input type="number" id="prodTarget" value="18" min="8" max="30" style="min-width:90px"></label></div>
+      <div class="scroll"><table id="provTable"></table></div></div>
+    <div class="card"><h3>Point-of-service collection rate by site</h3><p class="hint">Share of expected patient responsibility (copay, coinsurance, sliding fee) collected at the visit. Medicaid visits carry no patient responsibility and are excluded.</p><div class="chart"><canvas id="cPos"></canvas></div><div class="legend" id="posLegend"></div></div>
+  </div>
+  <div class="grid g21 mt">
+    <div class="card"><h3>Completed visits · actual, forecast and budget</h3><p class="hint">Forecast for Oct–Dec uses the last-3-month run rate with seasonal adjustment; the band is ±1.96 × the run-rate model's monthly error. Visits drive both PPS revenue and the UDS denominators.</p><div class="chart tall"><canvas id="cFc"></canvas></div></div>
+    <div class="card"><h3>Forecast assumptions</h3><p class="hint">Change these and the forecast and year-end variance update.</p>
+      <div class="sim" style="grid-template-columns:1fr">
+        <label>November seasonal factor <span class="v" id="vNov"></span><input type="range" id="fNov" min="80" max="110" value="96"></label>
+        <label>December seasonal factor <span class="v" id="vDec"></span><input type="range" id="fDec" min="70" max="105" value="87"></label>
+        <label>Monthly budget (visits) <span class="v" id="vBud"></span><input type="range" id="fBud" min="3000" max="7000" step="50" value="4900"></label>
+      </div>
+      <div class="kv mt" id="fcKv"></div>
+    </div>
   </div>
 </section>
 
@@ -263,6 +314,10 @@ footer{margin-top:28px;color:var(--muted);font-size:12px;border-top:1px solid va
     <div class="card"><h3>Why data quality is a quality measure</h3><p class="hint">Documentation gaps don't just look bad — they move UDS rates.</p><div id="dqStory" class="insights"></div></div>
     <div class="card"><h3>EHR extract validation checks</h3><p class="hint">Run on every refresh before any measure is published. Thresholds reflect UDS reporting tolerance.</p><div class="scroll"><table id="dqTable"></table></div></div>
   </div>
+  <div class="grid g21 mt">
+    <div class="card"><h3>UDS submission readiness · cross-table reconciliation</h3><p class="hint">HRSA's edit checks reject submissions where totals don't tie out across tables. These run monthly so problems surface in October, not February.</p><div class="scroll" style="max-height:none"><table id="udsTable"></table></div></div>
+    <div class="card"><h3>Reporting calendar</h3><p class="hint">CY2026 UDS report.</p><div class="kv" id="udsCal"></div></div>
+  </div>
 </section>
 
 <!-- METHOD -->
@@ -271,6 +326,9 @@ footer{margin-top:28px;color:var(--muted);font-size:12px;border-top:1px solid va
     <div class="card">
       <h3>Pipeline</h3><p class="hint">How this would run on real data — monthly for UDS tracking, weekly for worklists.</p>
       <div class="flow"><span class="n">eClinicalWorks<br><span class="muted">encounters, vitals, labs, problem list</span></span><span class="a">→</span><span class="n">SQL extract<br><span class="muted">nightly, de-identified view</span></span><span class="a">→</span><span class="n">Validation<br><span class="muted">Data-quality checks</span></span><span class="a">→</span><span class="n">Measure engine<br><span class="muted">eCQM logic per UDS manual</span></span><span class="a">→</span><span class="n">This dashboard<br><span class="muted">static, GitHub Pages / intranet</span></span></div>
+      <h3 class="mt">KPI dictionary</h3>
+      <p class="hint">One agreed definition, owner and refresh cadence per metric, so departments read the same number the same way.</p>
+      <div class="scroll" style="max-height:none"><table id="kpiDict"></table></div>
       <h3 class="mt">Measure definitions</h3>
       <div class="scroll" style="max-height:none"><table id="defTable"></table></div>
     </div>
@@ -324,38 +382,49 @@ const ASOF = new Date(2026, 8, 30);           // data through Sep 30 2026
 const PERIOD_END = new Date(2026, 11, 31);
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep'];
 const SITES = [
-  {id:'MOR', name:'Morgan Street', w:.37, adj:.03, sat:true},
-  {id:'WES', name:'Western Ave',   w:.27, adj:-.04, sat:true},
-  {id:'BER', name:'Berwyn',        w:.26, adj:.01, sat:true},
-  {id:'SBH', name:'School-based (3)', w:.10, adj:.00, sat:false},
+  {id:'MOR', name:'Morgan Street', w:.37, adj:.03, sat:true, ftes:[1,1,1,.8,.8,.6], eff:[1.08,.97,1.02,.9,1.12,.85]},
+  {id:'WES', name:'Western Ave',   w:.27, adj:-.04, sat:true, ftes:[1,1,.8,.6,.6], eff:[.88,1.05,.8,1.1,.95]},
+  {id:'BER', name:'Berwyn',        w:.26, adj:.01, sat:true, ftes:[1,1,.8,.8,.5], eff:[1.04,.93,1.1,.98,.9]},
+  {id:'SBH', name:'School-based (3)', w:.10, adj:.00, sat:false, ftes:[1,.6], eff:[1,1]},
 ];
 const PAYERS = ['Medicaid','Uninsured / sliding fee','Medicare','Private'];
 const LANGS = ['Spanish','English','Other'];
+const DOMAINS = ['Preventive care','Chronic disease','Behavioral health','Maternal & child health'];
 
-/* Measures: elig(p) → in denominator; base = probability of the "good" outcome. inverse=true → reported rate is the BAD outcome (lower is better). */
+/* Measures: elig(p) → in denominator; base = probability of the "good" outcome. inverse=true → reported rate is the BAD outcome (lower is better).
+   hedis = closest HEDIS measure for MCO / value-based-care alignment (specs differ — UDS uses eCQM logic, HEDIS uses NCQA specs). */
 const MEASURES = [
-  {id:'htn', name:'Controlling high blood pressure', ecqm:'CMS165', table:'7', base:.63, bench:63, target:65, lookback:0,
-   def:'Adults 18–85 with hypertension whose most recent BP in the period is <140/90.', elig:p=>p.htn && p.age>=18 && p.age<=85},
-  {id:'dm', name:'Diabetes: HbA1c poor control (>9%)', ecqm:'CMS122', table:'7', base:.70, bench:30, target:28, inverse:true, lookback:0,
-   def:'Adults 18–75 with diabetes whose most recent HbA1c is >9% or who had no HbA1c test in the period. Inverse — lower is better.', elig:p=>p.dm && p.age>=18 && p.age<=75},
-  {id:'cerv', name:'Cervical cancer screening', ecqm:'CMS124', table:'6B', base:.54, bench:53, target:55, lookback:.72,
+  {id:'cerv', domain:0, name:'Cervical cancer screening', ecqm:'CMS124', hedis:'CCS-E', table:'6B', base:.54, bench:53, target:55, lookback:.72,
    def:'Women 21–64 screened with cytology (3 yrs) or HPV co-testing (5 yrs, age 30+).', elig:p=>p.sex==='F' && p.age>=21 && p.age<=64},
-  {id:'crc', name:'Colorectal cancer screening', ecqm:'CMS130', table:'6B', base:.40, bench:42, target:45, lookback:.70,
-   def:'Adults 45–75 with appropriate CRC screening (colonoscopy 10 yrs, FIT annually, FIT-DNA 3 yrs, CT colonography 5 yrs).', elig:p=>p.age>=45 && p.age<=75},
-  {id:'brst', name:'Breast cancer screening', ecqm:'CMS125', table:'6B', base:.51, target:50, lookback:.55,
+  {id:'brst', domain:0, name:'Breast cancer screening', ecqm:'CMS125', hedis:'BCS-E', table:'6B', base:.51, target:50, lookback:.55,
    def:'Women 52–74 with a mammogram in the 27 months before period end.', elig:p=>p.sex==='F' && p.age>=52 && p.age<=74},
-  {id:'dep', name:'Depression screening & follow-up', ecqm:'CMS2', table:'6B', base:.73, target:75, lookback:0,
-   def:'Patients 12+ screened with a standardized tool and, if positive, a documented follow-up plan.', elig:p=>p.age>=12},
-  {id:'tob', name:'Tobacco screening & cessation', ecqm:'CMS138', table:'6B', base:.86, target:85, lookback:0,
+  {id:'crc', domain:0, name:'Colorectal cancer screening', ecqm:'CMS130', hedis:'COL-E', table:'6B', base:.40, bench:42, target:45, lookback:.70,
+   def:'Adults 45–75 with appropriate CRC screening (colonoscopy 10 yrs, FIT annually, FIT-DNA 3 yrs, CT colonography 5 yrs).', elig:p=>p.age>=45 && p.age<=75},
+  {id:'tob', domain:0, name:'Tobacco screening & cessation', ecqm:'CMS138', table:'6B', base:.86, target:85, lookback:0,
    def:'Patients 12+ screened for tobacco use and, if a user, given cessation intervention.', elig:p=>p.age>=12},
-  {id:'bmi', name:'Child/adolescent weight assessment & counseling', ecqm:'CMS155', table:'6B', base:.71, target:75, lookback:0,
+  {id:'hiv', domain:0, name:'HIV screening', ecqm:'CMS349', table:'6B', base:.43, target:45, lookback:.6,
+   def:'Patients 15–65 ever tested for HIV. Ties to Alivio\'s HIV prevention program.', elig:p=>p.age>=15 && p.age<=65},
+  {id:'htn', domain:1, name:'Controlling high blood pressure', ecqm:'CMS165', hedis:'CBP', table:'7', base:.63, bench:63, target:65, lookback:0,
+   def:'Adults 18–85 with hypertension whose most recent BP in the period is <140/90.', elig:p=>p.htn && p.age>=18 && p.age<=85},
+  {id:'dm', domain:1, name:'Diabetes: HbA1c poor control (>9%)', ecqm:'CMS122', hedis:'GSD', table:'7', base:.70, bench:30, target:28, inverse:true, lookback:0,
+   def:'Adults 18–75 with diabetes whose most recent HbA1c is >9% or who had no HbA1c test in the period. Inverse — lower is better.', elig:p=>p.dm && p.age>=18 && p.age<=75},
+  {id:'dep', domain:2, name:'Depression screening & follow-up', ecqm:'CMS2', table:'6B', base:.73, target:75, lookback:0,
+   def:'Patients 12+ screened with a standardized tool and, if positive, a documented follow-up plan.', elig:p=>p.age>=12},
+  {id:'drem', domain:2, name:'Depression remission at 12 months', ecqm:'CMS159', hedis:'DRR-E', table:'6B', base:.18, target:20, lookback:0,
+   def:'Patients 12+ with major depression or dysthymia and an index PHQ-9 >9 whose PHQ-9 is <5 at 12 months (±60 days).', elig:p=>p.depIdx},
+  {id:'bmi', domain:3, name:'Child/adolescent weight assessment & counseling', ecqm:'CMS155', hedis:'WCC', table:'6B', base:.71, target:75, lookback:0,
    def:'Patients 3–17 with BMI percentile, nutrition and physical activity counseling documented.', elig:p=>p.age>=3 && p.age<=17},
-  {id:'pnc', name:'Early entry into prenatal care', ecqm:'UDS', table:'6B', base:.68, target:72, lookback:0,
+  {id:'cis', domain:3, name:'Childhood immunization status', ecqm:'CMS117', hedis:'CIS-E', table:'6B', base:.39, target:42, lookback:.5,
+   def:'Children turning 2 in the period with all recommended vaccines (DTaP, IPV, MMR, HiB, HepB, VZV, PCV, HepA, RV, flu).', elig:p=>p.age===2},
+  {id:'pnc', domain:3, name:'Early entry into prenatal care', ecqm:'UDS', hedis:'PPC', table:'6B', base:.68, target:72, lookback:0,
    def:'Prenatal patients whose first prenatal visit was in the first trimester.', elig:p=>p.preg},
+  {id:'lbw', domain:3, name:'Low birth weight (<2,500 g)', ecqm:'UDS', table:'7', base:.92, target:8, inverse:true, noGap:true, lookback:0,
+   def:'Live births to health center prenatal patients weighing under 2,500 g. Inverse; an outcome, not an outreach gap.', elig:p=>p.delivered},
 ];
 const MBYID = Object.fromEntries(MEASURES.map(m=>[m.id,m]));
 /* Outcome weight for prioritization (outcome measures > process measures) */
-const WEIGHT = {htn:3, dm:3, pnc:3, crc:2, cerv:2, brst:2, dep:1.5, tob:1, bmi:1};
+const WEIGHT = {htn:3, dm:3, pnc:3, drem:2.5, cis:2.5, crc:2, cerv:2, brst:2, dep:1.5, hiv:1, tob:1, bmi:1, lbw:0};
+const ADULT_ONLY_BENCH = true;
 
 /* ============================== RNG & GENERATION ============================== */
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
@@ -382,15 +451,17 @@ for(let i=0;i<N;i++){
   const portal = R() < (lang==='English'?.48:.27) * (age>=65?.6:1);
   const htn = age>=18 && R()<(age<45?.08:age<65?.32:.58);
   const dm  = age>=18 && R()<(age<45?.04:age<65?.18:.28);
-  const preg = sex==='F' && age>=18 && age<=40 && R()<.045;
+  const preg = sex==='F' && age>=18 && age<=40 && R()<.06;
+  const delivered = preg && R()<.72;
+  const depIdx = age>=12 && R()<.07;
   const chw = (htn||dm) && R()<.14;
   const lastVisitDay = Math.floor(273 * Math.pow(R(), .55)); // skewed recent
   const lastVisit = new Date(2026,8,30 - lastVisitDay);
   const nextAppt = R() < (htn||dm||preg ? .42 : .24);
-  const p = {id:'DEMO-'+String(10000+i), site:site.id, age, sex, payer, lang, visits, portal, htn, dm, preg, chw, lastVisit, nextAppt, m:{}, metMonth:{}};
+  const p = {id:'DEMO-'+String(10000+i), site:site.id, age, sex, payer, lang, visits, portal, htn, dm, preg, delivered, depIdx, chw, lastVisit, nextAppt, m:{}, metMonth:{}};
   // data quality flags
   p.dqRace = R()<.031; p.dqSogi = R()<.19; p.dqZip = R()<.012; p.dqAttr = R()<.024;
-  p.dqA1cScanned = false;
+  p.dqA1cScanned = false; p.fplUnknown = R() < (payer==='Uninsured / sliding fee'?.06:.14);
   // measures
   const payAdj = payer==='Uninsured / sliding fee'?-.07 : payer==='Private'?.02 : 0;
   const visAdj = Math.min(visits,6)*.025 - .06;
@@ -401,6 +472,9 @@ for(let i=0;i<N;i++){
     if(m.id==='brst' && lang==='Other') adj -= .08;
     if(m.id==='dep' && lang==='Spanish') adj -= .04;          // screening-tool language gap
     if((m.id==='bmi') && site.id==='SBH') adj += .08;
+    if(m.id==='cis' && payer==='Uninsured / sliding fee') adj -= .06;
+    if(m.id==='drem') adj = adj*.4 + (chw?.04:0);   // remission responds less to visit volume
+    if(m.id==='lbw') adj = adj*.2;
     let good = R() < clamp(m.base + adj);
     if(m.id==='dm' && !good && R()<.14){ p.dqA1cScanned = true; } // result exists but sits in a scanned document → counts as "no test"
     p.m[m.id] = good;
@@ -439,7 +513,11 @@ for(let i=0;i<N;i++){
     ns += site.id==='WES'?.02 : site.id==='SBH'?-.05 : 0;
     ns += (month===6||month===7)?.02:0;
     const noshow = R()<clamp(ns,.02,.6);
-    appts.push({site:site.id,payer,lang,month,dow,hour,lead,viaPortal,noshow});
+    const pi = pick(site.ftes.map((_,k)=>k), site.ftes.map((f,k)=>f*site.eff[k]));
+    const expected = noshow ? 0 : payer==='Private'?30 : payer==='Medicare'?15 : payer==='Uninsured / sliding fee'?25 : 0;
+    let cp = .74 + (site.id==='WES'?-.09:site.id==='SBH'?-.22:site.id==='MOR'?.03:0) + (dow===6?-.06:0) + (viaPortal?.07:0) + (payer==='Uninsured / sliding fee'?-.08:0) + (month>=6?.03:0);
+    const collected = expected && R()<clamp(cp,.05,.97) ? expected : 0;
+    appts.push({site:site.id,payer,lang,month,dow,hour,lead,viaPortal,noshow,prov:site.id+'-'+(pi+1),expected,collected});
     if(!noshow) kept++;
   }
 }
@@ -468,7 +546,7 @@ function measureStats(m, pts){
   else { meets = rate>=t; toClose = meets?0:Math.ceil(t*den - num); }
   return {den,num,rate,meets,toClose};
 }
-function openGaps(p){ const g=[]; for(const m of MEASURES){ if(!(m.id in p.m)) continue; if(!p.m[m.id]) g.push(m.id);} return g; }
+function openGaps(p){ const g=[]; for(const m of MEASURES){ if(m.noGap || !(m.id in p.m)) continue; if(!p.m[m.id]) g.push(m.id);} return g; }
 function statusBadge(ok, near){ return ok ? '<span class="status s-good"><i>✓</i>Meets target</span>' : near ? '<span class="status s-warn"><i>!</i>Within 3 pts</span>' : '<span class="status s-crit"><i>✕</i>Below target</span>'; }
 
 /* ============================== CHARTS ============================== */
@@ -500,7 +578,7 @@ function initFilters(){
   $('fReset').onclick=()=>{state.site=state.payer=state.lang='all';$('fSite').value=$('fPayer').value=$('fLang').value='all';render()};
   const opts = MEASURES.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
   $('gMeasure').innerHTML = '<option value="all">All open gaps</option>'+opts;
-  $('sMeasure').innerHTML = MEASURES.filter(m=>!m.inverse).map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  $('sMeasure').innerHTML = MEASURES.filter(m=>!m.inverse && !m.noGap).map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
   $('sMeasure').value = state.sMeasure;
   $('gMeasure').onchange=e=>{state.gMeasure=e.target.value;renderGaps()};
   $('gAppt').onchange=e=>{state.gAppt=e.target.value;renderGaps()};
@@ -525,7 +603,7 @@ function renderOverview(){
     ['Unique patients (UDS universe)', fmt(pts.length), 'patients with ≥1 countable visit'],
     ['Completed medical visits', fmt(kept), `${(kept/Math.max(1,pts.length)).toFixed(1)} per patient YTD`],
     ['No-show rate', pct(ns/Math.max(1,ap.length)), `<span class="${d>0?'down':'up'}">${d>0?'▲':'▼'} ${Math.abs(d).toFixed(1)} pts</span> Q3 vs Q2`],
-    ['Measures at target', `${meets} / ${MEASURES.length}`, 'UDS Table 6B & 7 measures'],
+    ['Measures at target', `${meets} / ${MEASURES.length}`, 'UDS Table 6B & 7 · preventive, chronic, BH, maternal-child'],
     ['Open care gaps', fmt(gaps), `${fmt(pts.filter(p=>openGaps(p).length).length)} patients affected`],
     ['Medicaid renewals at risk', fmt(redet90), 'due ≤90 days, not yet submitted'],
   ];
@@ -560,25 +638,29 @@ function renderOverview(){
   const ch = pts.filter(p=>(p.htn)&&'htn' in p.m), chY=ch.filter(p=>p.chw), chN=ch.filter(p=>!p.chw);
   const rY = chY.filter(p=>p.m.htn).length/Math.max(1,chY.length), rN = chN.filter(p=>p.m.htn).length/Math.max(1,chN.length);
   ins.push(`Hypertensive patients enrolled with a <b>Community Health Worker</b> are controlled at ${pct(rY)} vs ${pct(rN)} — an association worth a proper matched comparison before it goes in a grant report.`);
+  const resp=ap.filter(a=>!a.noshow&&a.expected>0); const bySiteCol=SITES.map(s=>{const x=resp.filter(a=>a.site===s.id);const e=x.reduce((a,y)=>a+y.expected,0);return {s,r:e?x.reduce((a,y)=>a+y.collected,0)/e:null,miss:e-x.reduce((a,y)=>a+y.collected,0)}}).filter(x=>x.r!=null&&x.s.id!=='SBH').sort((a,b)=>a.r-b.r);
+  if(bySiteCol.length>1) ins.push(`Point-of-service collection is lowest at <b>${bySiteCol[0].s.name} (${pct(bySiteCol[0].r)})</b> vs ${pct(bySiteCol[bySiteCol.length-1].r)} at ${bySiteCol[bySiteCol.length-1].s.name} — <b>${money(bySiteCol[0].miss)}</b> not collected at the visit YTD.`);
   $('insights').innerHTML = ins.map(x=>`<div class="insight">${x}</div>`).join('');
 }
+function isDark(){ const t=document.documentElement.dataset.theme; return t==='dark' || (t!=='light' && matchMedia('(prefers-color-scheme: dark)').matches); }
 function daysLeft(){ return Math.round((PERIOD_END - new Date(2026,9,9))/864e5); }
 
 /* ============================== QUALITY ============================== */
 function renderQuality(){
   const pts=P();
   const rows = MEASURES.map(m=>({m,...measureStats(m,pts)}));
-  $('qTable').innerHTML = `<thead><tr><th>Measure</th><th>eCQM</th><th class="num">Denominator</th><th class="num">Numerator</th><th>Rate vs target</th><th class="num">National</th><th class="num">Target</th><th class="num">To close</th><th>Status</th></tr></thead><tbody>`+
-    rows.map(r=>{
+  $('qTable').innerHTML = `<thead><tr><th>Measure</th><th>eCQM</th><th>HEDIS</th><th class="num">Denominator</th><th class="num">Numerator</th><th>Rate vs target</th><th class="num">National</th><th class="num">Target</th><th class="num">To close</th><th>Status</th></tr></thead><tbody>`+
+    rows.map((r,i)=>{
       const t=targets[r.m.id], rate=r.rate*100, near = !r.meets && Math.abs(rate-t)<=3;
+      const grp = (i===0 || rows[i-1].m.domain!==r.m.domain) ? `<tr class="grp"><td colspan="10">${DOMAINS[r.m.domain]}</td></tr>` : '';
       const w = Math.min(100,rate);
-      return `<tr data-m="${r.m.id}" class="${state.qSel===r.m.id?'sel':''}" style="cursor:pointer">
+      return grp+`<tr data-m="${r.m.id}" class="${state.qSel===r.m.id?'sel':''}" style="cursor:pointer">
         <td><b>${r.m.name}</b>${r.m.inverse?' <span class="chip">inverse</span>':''}<div class="muted" style="font-size:11px">UDS Table ${r.m.table}</div></td>
-        <td>${r.m.ecqm}</td><td class="num">${fmt(r.den)}</td><td class="num">${fmt(r.num)}</td>
+        <td>${r.m.ecqm}</td><td class="muted">${r.m.hedis||'—'}</td><td class="num">${fmt(r.den)}${r.den<30?' <span class="chip" title="Small denominator — interpret with caution">small n</span>':''}</td><td class="num">${fmt(r.num)}</td>
         <td><div class="bar-cell"><div class="track"><div class="fill" style="width:${w}%;background:${r.meets?'var(--s1)':'var(--crit)'}"></div><div class="mark" style="left:${t}%" title="Target ${t}%"></div></div><span style="font-variant-numeric:tabular-nums;font-weight:600;width:48px;text-align:right">${rate.toFixed(1)}%</span></div></td>
         <td class="num muted">${r.m.bench!=null? r.m.bench+'%':'—'}</td>
         <td class="num"><input type="number" min="1" max="99" value="${t}" data-t="${r.m.id}" style="width:56px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:2px 6px;text-align:right" aria-label="Target for ${r.m.name}"></td>
-        <td class="num">${r.toClose?fmt(r.toClose):'—'}</td>
+        <td class="num">${r.m.noGap?'<span class="muted" title="Outcome measure — moved by prenatal care quality, not outreach">outcome</span>':r.toClose?fmt(r.toClose):'—'}</td>
         <td>${statusBadge(r.meets, near)}</td></tr>`}).join('')+'</tbody>';
   $('qTable').querySelectorAll('tr[data-m]').forEach(tr=>tr.onclick=e=>{ if(e.target.tagName==='INPUT')return; state.qSel=tr.dataset.m; renderQuality(); });
   $('qTable').querySelectorAll('input[data-t]').forEach(inp=>inp.onchange=e=>{ const v=Math.max(1,Math.min(99,+e.target.value||1)); targets[inp.dataset.t]=v; render(); });
@@ -789,11 +871,172 @@ function renderMethod(){
   $('nPat').textContent=fmt(patients.length); $('nAppt').textContent=fmt(appts.length);
 }
 
+/* ============================== VALUE-BASED CARE ============================== */
+function renderVbc(){
+  const pts=P(true).filter(p=>state.site==='all'||p.site===state.site);
+  const mcd = pts.filter(p=>p.payer==='Medicaid');
+  const rows = MEASURES.filter(m=>m.hedis).map(m=>{
+    const a=measureStats(m,pts), d=measureStats(m,mcd);
+    const open = mcd.filter(p=>m.id in p.m && !p.m[m.id] && !m.noGap);
+    return {m,a,d,open:open.length,booked:open.filter(p=>p.nextAppt).length};
+  });
+  $('vbcTable').innerHTML = `<thead><tr><th>HEDIS</th><th>UDS measure</th><th class="num">Medicaid n</th><th class="num">Medicaid rate</th><th class="num">All-payer rate</th><th class="num">Difference</th><th class="num">Open Medicaid gaps</th><th class="num">…with visit booked</th></tr></thead><tbody>`+
+    rows.map(r=>{ const diff=(r.d.rate-r.a.rate)*100*(r.m.inverse?-1:1); return `<tr><td><b>${r.m.hedis}</b></td><td>${r.m.name}<div class="muted" style="font-size:11px">${r.m.ecqm}${r.m.inverse?' · inverse':''}</div></td><td class="num">${fmt(r.d.den)}</td><td class="num"><b>${pct(r.d.rate)}</b></td><td class="num muted">${pct(r.a.rate)}</td><td class="num ${diff>=0?'up':'down'}">${diff>=0?'+':''}${diff.toFixed(1)} pts</td><td class="num">${r.m.noGap?'—':fmt(r.open)}</td><td class="num">${r.m.noGap?'—':fmt(r.booked)}</td></tr>`}).join('')+'</tbody>';
+}
+
+/* ============================== EQUITY ============================== */
+const AGEB=[['0–17',p=>p.age<18],['18–44',p=>p.age>=18&&p.age<45],['45–64',p=>p.age>=45&&p.age<65],['65+',p=>p.age>=65]];
+function renderEquity(){
+  const pts = patients.filter(p=>state.site==='all'||p.site===state.site);
+  const groups = [
+    ...LANGS.map(l=>({fam:'Language',k:l,f:p=>p.lang===l})),
+    ...PAYERS.map(py=>({fam:'Payer',k:py.split(' ')[0],f:p=>p.payer===py})),
+    ...AGEB.map(a=>({fam:'Age',k:a[0],f:a[1]})),
+  ];
+  const dk = isDark();
+  const ramp = dk ? {neg:['#4a2424','#8a3534','#d03b3b'], pos:['#1c2f4a','#256abf','#3987e5'], mid:'#2c2c2a'} : {neg:['#f6c9c8','#ec9190','#d03b3b'], pos:['#cde2fb','#86b6ef','#2a78d6'], mid:'#e6e5e0'};
+  const tops=[];
+  let head = '<thead><tr><th rowspan="2">Measure</th><th rowspan="2" class="num">All</th>';
+  const fams=[...new Set(groups.map(g=>g.fam))];
+  head += fams.map(f=>`<th colspan="${groups.filter(g=>g.fam===f).length}" style="text-align:center">${f}</th>`).join('')+'</tr><tr>'+groups.map(g=>`<th class="num" style="top:30px">${g.k}</th>`).join('')+'</tr></thead>';
+  const body = MEASURES.map(m=>{
+    const all = measureStats(m,pts);
+    const cells = groups.map(g=>{
+      const st = measureStats(m, pts.filter(g.f));
+      if(st.den<30) return `<td class="num" style="color:var(--muted)" title="n=${st.den} — suppressed">${st.den?'n&lt;30':''}</td>`;
+      const d = (st.rate-all.rate)*100*(m.inverse?-1:1);
+      const abs=Math.abs(d), lvl = abs<2?-1: abs<5?0: abs<10?1:2;
+      const bg = lvl<0?ramp.mid:(d<0?ramp.neg:ramp.pos)[lvl];
+      const ink = dk ? '#fff' : (lvl===2?'#fff':'#0b0b0b');
+      if(d<=-5) tops.push({m,g,d,st, affected: Math.round(abs/100*st.den)});
+      return `<td class="num" style="background:${bg};color:${ink};font-weight:${lvl>=1?600:400}" title="${g.fam} ${g.k} · ${pct(st.rate)} · n=${fmt(st.den)} · ${d>=0?'+':''}${d.toFixed(1)} pts vs all">${(st.rate*100).toFixed(0)}</td>`;
+    }).join('');
+    return `<tr><td style="white-space:nowrap"><b>${m.ecqm}</b> <span class="muted" style="font-size:11px">${m.name.length>30?m.name.slice(0,28)+'…':m.name}</span></td><td class="num"><b>${(all.rate*100).toFixed(0)}</b></td>${cells}</tr>`;
+  }).join('');
+  $('eqTable').innerHTML = head+'<tbody>'+body+'</tbody>';
+  $('eqLegend').innerHTML = `<span><i style="background:${ramp.neg[2]}"></i>≥10 pts worse</span><span><i style="background:${ramp.neg[1]}"></i>5–10 worse</span><span><i style="background:${ramp.neg[0]}"></i>2–5 worse</span><span><i style="background:${ramp.mid}"></i>within 2</span><span><i style="background:${ramp.pos[0]}"></i>2–5 better</span><span><i style="background:${ramp.pos[1]}"></i>5–10 better</span><span><i style="background:${ramp.pos[2]}"></i>≥10 better</span><span class="muted">Values are rates in %; inverse measures coloured so red is always worse.</span>`;
+  tops.sort((a,b)=>b.affected-a.affected);
+  $('eqTop').innerHTML = tops.slice(0,6).map(t=>`<div class="insight"><b>${t.m.name}</b> · ${t.g.fam.toLowerCase()} <b>${t.g.k}</b>: ${pct(t.st.rate)} vs all-patient rate, <b>${Math.abs(t.d).toFixed(1)} pts worse</b> — ~${fmt(t.affected)} patients to close the gap (n=${fmt(t.st.den)}).</div>`).join('') || '<div class="insight">No gaps of 5+ points in this view.</div>';
+}
+
+/* ============================== FINANCE ============================== */
+const CLINIC_DAYS=186, AVAIL=.88;
+function renderFinance(){
+  const ap=A(), kept=ap.filter(a=>!a.noshow);
+  const tgt=+$('prodTarget').value||18;
+  const provs=[]; for(const s of SITES) s.ftes.forEach((f,i)=>{ if(state.site!=='all'&&s.id!==state.site) return; provs.push({id:s.id+'-'+(i+1),site:s.id,fte:f}); });
+  const byProv = Object.fromEntries(provs.map(p=>[p.id,{v:0,ns:0,n:0}]));
+  for(const a of ap){ const b=byProv[a.prov]; if(!b) continue; b.n++; if(a.noshow) b.ns++; else b.v++; }
+  provs.forEach(p=>{ const b=byProv[p.id]; p.visits=b.v; p.perDay=b.v/(p.fte*CLINIC_DAYS*AVAIL); p.ns=b.ns/Math.max(1,b.n); });
+  provs.sort((a,b)=>b.perDay-a.perDay);
+  const orgPerDay = provs.reduce((a,p)=>a+p.visits,0)/Math.max(1e-9,provs.reduce((a,p)=>a+p.fte,0)*CLINIC_DAYS*AVAIL);
+  const maxV=Math.max(tgt*1.4, ...provs.map(p=>p.perDay));
+  $('provTable').innerHTML = `<thead><tr><th>Provider</th><th>Site</th><th class="num">FTE</th><th class="num">Visits YTD</th><th>Visits / FTE / day vs target</th><th class="num">No-show</th></tr></thead><tbody>`+
+    provs.map((p,i)=>`<tr><td>Provider ${String.fromCharCode(65+i)}<div class="muted" style="font-size:11px">${p.id}</div></td><td>${siteName(p.site)}</td><td class="num">${p.fte.toFixed(1)}</td><td class="num">${fmt(p.visits)}</td><td><div class="bar-cell"><div class="track"><div class="fill" style="width:${100*p.perDay/maxV}%;background:${p.perDay>=tgt?'var(--s1)':p.perDay>=tgt*.9?'var(--warn)':'var(--crit)'}"></div><div class="mark" style="left:${100*tgt/maxV}%"></div></div><span style="width:40px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">${p.perDay.toFixed(1)}</span></div></td><td class="num">${pct(p.ns)}</td></tr>`).join('')+'</tbody>';
+
+  // POS collections
+  const resp = kept.filter(a=>a.expected>0);
+  const exp = resp.reduce((a,x)=>a+x.expected,0), col=resp.reduce((a,x)=>a+x.collected,0);
+  const sites = SITES.filter(s=>state.site==='all'||s.id===state.site);
+  mk('cPos',{type:'line',data:{labels:MONTHS,datasets:sites.map(s=>{ const col2=siteColor(s.id); return {label:s.name,borderColor:col2,backgroundColor:col2,borderWidth:2,pointRadius:2.5,pointHoverRadius:5,tension:.25,
+      data:MONTHS.map((_,mi)=>{ const x=resp.filter(a=>a.site===s.id&&a.month===mi); const e=x.reduce((a,y)=>a+y.expected,0); return e? +(100*x.reduce((a,y)=>a+y.collected,0)/e).toFixed(1):null; })};})},
+    options:baseOpts({scales:{x:baseOpts().scales.x,y:{...pctAxis(100),beginAtZero:false,suggestedMin:40}}})});
+  $('posLegend').innerHTML = sites.map(s=>`<span><i style="background:${siteColor(s.id)}"></i>${s.name}</span>`).join('');
+
+  // forecast
+  const monthly = MONTHS.map((_,i)=>kept.filter(a=>a.month===i).length);
+  const nov=+$('fNov').value/100, dec=+$('fDec').value/100, bud=+$('fBud').value;
+  $('vNov').textContent=Math.round(nov*100)+'%'; $('vDec').textContent=Math.round(dec*100)+'%'; $('vBud').textContent=fmt(bud);
+  const run = (monthly[6]+monthly[7]+monthly[8])/3;
+  // model error: 3-month trailing run-rate forecast error over Apr–Sep
+  const errs=[]; for(let i=3;i<9;i++){ const f=(monthly[i-1]+monthly[i-2]+monthly[i-3])/3; errs.push(monthly[i]-f); }
+  const sd = Math.sqrt(errs.reduce((a,e)=>a+e*e,0)/errs.length);
+  const fc=[run, run*nov, run*dec];
+  const labels=[...MONTHS,'Oct','Nov','Dec'];
+  const scale = provs.length && state.site!=='all' ? 1 : 1;
+  const budget = labels.map(()=>Math.round(bud*(state.site==='all'?1:(SITES.find(s=>s.id===state.site).w))));
+  const actual=[...monthly,null,null,null];
+  const fcLine=[...Array(8).fill(null),monthly[8],...fc.map(Math.round)];
+  const hi=[...Array(8).fill(null),monthly[8],...fc.map(v=>Math.round(v+1.96*sd))];
+  const lo=[...Array(8).fill(null),monthly[8],...fc.map(v=>Math.round(v-1.96*sd))];
+  mk('cFc',{type:'line',data:{labels,datasets:[
+    {label:'95% band (upper)',data:hi,borderWidth:0,pointRadius:0,fill:'+1',backgroundColor:'rgba(57,135,229,.15)'},
+    {label:'95% band (lower)',data:lo,borderWidth:0,pointRadius:0,fill:false},
+    {label:'Actual',data:actual,borderColor:css('--s1'),backgroundColor:css('--s1'),borderWidth:2,pointRadius:3,tension:.2},
+    {label:'Forecast',data:fcLine,borderColor:css('--s1'),backgroundColor:css('--s1'),borderDash:[5,4],borderWidth:2,pointRadius:3,tension:.2},
+    {label:'Budget',data:budget,borderColor:css('--muted'),borderDash:[2,3],borderWidth:1.5,pointRadius:0}]},
+    options:baseOpts({scales:{x:baseOpts().scales.x,y:{...baseOpts().scales.y,beginAtZero:false}},plugins:{...baseOpts().plugins,legend:{display:true,position:'bottom',labels:{...baseOpts().plugins.legend.labels,filter:i=>!i.text.startsWith('95%')}},tooltip:{...baseOpts().plugins.tooltip,filter:i=>i.raw!=null && !i.dataset.label.startsWith('95%')}}})});
+  const ytd = monthly.reduce((a,b)=>a+b,0), ytdBud=budget[0]*9, fy=ytd+fc.reduce((a,b)=>a+b,0), fyBud=budget[0]*12;
+  $('fcKv').innerHTML=[
+    ['YTD actual vs budget', `${fmt(ytd)} / ${fmt(ytdBud)} (${ytd>=ytdBud?'+':''}${pct((ytd-ytdBud)/ytdBud)})`],
+    ['Run rate (Jul–Sep avg / month)', fmt(Math.round(run))],
+    ['Forecast Q4 visits', `${fmt(Math.round(fc[0]+fc[1]+fc[2]))} ± ${fmt(Math.round(1.96*sd*Math.sqrt(3)))}`],
+    ['Full-year forecast vs budget', `${fmt(Math.round(fy))} vs ${fmt(fyBud)} (${fy>=fyBud?'+':''}${pct((fy-fyBud)/fyBud)})`],
+    ['Model error (RMSE, monthly)', fmt(Math.round(sd))+' visits'],
+  ].map(x=>`<div>${x[0]}</div><div>${x[1]}</div>`).join('');
+
+  const uncollected = exp-col;
+  const below = provs.filter(p=>p.perDay<tgt*.9).length;
+  $('finKpis').innerHTML=[
+    ['Visits / clinical FTE / day', orgPerDay.toFixed(1), `target ${tgt} · ${below} of ${provs.length} providers more than 10% below`],
+    ['Point-of-service collection', pct(col/Math.max(1,exp)), `${fmt(resp.length)} visits with patient responsibility`],
+    ['Not collected at visit (YTD)', money(uncollected), `≈ ${money(uncollected/39)} per week moves to statements`],
+    ['Full-year visit forecast', fmt(Math.round(fy)), `<span class="${fy>=fyBud?'up':'down'}">${fy>=fyBud?'▲':'▼'} ${pct(Math.abs(fy-fyBud)/fyBud)}</span> vs budget`],
+  ].map(t=>`<div class="card tile"><div class="lbl">${t[0]}</div><div class="val">${t[1]}</div><div class="delta">${t[2]}</div></div>`).join('');
+}
+
+/* ============================== UDS READINESS ============================== */
+const R2 = mulberry32(SEED+7);
+const PRIOR = Object.fromEntries(MEASURES.map(m=>[m.id, .9+R2()*.2]));
+PRIOR.hiv = 1.24; PRIOR.cis = .97;
+function renderUds(){
+  const pts=P(), n=pts.length;
+  const kept = A().filter(a=>!a.noshow).length;
+  const pmVisits = Math.round(kept*1.0041);
+  const fpl = pts.filter(p=>p.fplUnknown).length;
+  const shifts = MEASURES.map(m=>{ const d=measureStats(m,pts).den; return {m,d,prev:Math.round(d/PRIOR[m.id])}; }).filter(x=>Math.abs(x.d-x.prev)/Math.max(1,x.prev)>.15);
+  const rows=[
+    ['Table 3A (age/sex) total = Table 4 (income/insurance) total', `${fmt(n)} = ${fmt(n)}`, 'pass', 'Same patient universe feeds both tables.'],
+    ['Table 3A total = Table 3B (race/ethnicity) total', `${fmt(n)} = ${fmt(n)}`, 'pass', 'Unreported race/ethnicity is still counted in 3B.'],
+    ['ZIP code table total = Table 3A', `${fmt(n)} = ${fmt(n)}`, 'pass', 'Invalid ZIPs are reported as "unknown residence".'],
+    ['Table 4 income unknown (% FPL)', `${fmt(fpl)} · ${pct(fpl/Math.max(1,n))}`, fpl/n>.10?'warn':'pass', 'High unknown income weakens sliding-fee and grant narrative. Re-verify at check-in.'],
+    ['Table 5 visits = practice-management billed visits', `${fmt(kept)} vs ${fmt(pmVisits)}`, pmVisits!==kept?'fail':'pass', `${fmt(pmVisits-kept)} billed visits have no signed encounter note — not countable until signed.`],
+    ['Clinical denominators within ±15% of prior year', shifts.length?shifts.map(x=>`${x.m.ecqm} ${x.d>x.prev?'+':''}${pct((x.d-x.prev)/x.prev,0)}`).join(', '):'all within range', shifts.length?'warn':'pass', 'HRSA asks for an explanation of large swings, e.g. a value-set change or new screening workflow.'],
+    ['Patients with visit but missing DOB or sex', '0', 'pass', 'Required for every UDS table.'],
+  ];
+  const badge={pass:'<span class="status s-good"><i>✓</i>Ties out</span>',warn:'<span class="status s-warn"><i>!</i>Explain</span>',fail:'<span class="status s-crit"><i>✕</i>Fix</span>'};
+  $('udsTable').innerHTML='<thead><tr><th>Check</th><th>Result</th><th>Status</th><th>Note</th></tr></thead><tbody>'+rows.map(r=>`<tr><td>${r[0]}</td><td style="font-variant-numeric:tabular-nums;white-space:nowrap">${r[1]}</td><td>${badge[r[2]]}</td><td class="muted" style="font-size:12.5px">${r[3]}</td></tr>`).join('')+'</tbody>';
+  const today=new Date(2026,9,9), due=new Date(2027,1,15);
+  $('udsCal').innerHTML=[
+    ['Measurement period','Jan 1 – Dec 31, 2026'],
+    ['Days left in period', daysLeft()],
+    ['Preliminary reports (monthly)', 'Oct, Nov, Dec'],
+    ['Data freeze & final validation', 'Jan 2027'],
+    ['Submission deadline', 'Feb 15, 2027'],
+    ['Days to deadline', Math.round((due-today)/864e5)],
+  ].map(x=>`<div>${x[0]}</div><div>${x[1]}</div>`).join('');
+}
+
+/* ============================== KPI DICTIONARY ============================== */
+function renderKpiDict(){
+  const rows=[
+    ['No-show rate','Scheduled medical appointments not kept ÷ scheduled (excl. cancellations >24 h)','Operations / site directors','Weekly','eCW scheduling'],
+    ['Visits per clinical FTE per day','Completed countable visits ÷ (clinical FTE × clinic days × 0.88)','COO / medical director','Monthly','eCW encounters + HR FTE roster'],
+    ['Point-of-service collection rate','Patient responsibility collected at visit ÷ expected at visit','CFO / front-desk leads','Weekly','eCW PM ledger'],
+    ['UDS clinical measures','Per UDS Manual eCQM specs for the reporting year','Quality director','Monthly preliminary, annual final','eCW → measure engine'],
+    ['Open care gaps','Denominator patients not yet in numerator, excluding outcome measures','Quality / CHW team','Weekly','Measure engine'],
+    ['Medicaid renewals at risk','Medicaid patients with renewal due ≤90 days not yet submitted','Benefits enrollment','Weekly','Enrollment tracker + state portal'],
+    ['Visit forecast','3-month run rate × seasonal factor, 95% band from model error','CFO','Monthly','Encounters'],
+    ['Data-quality pass rate','Validation checks within tolerance ÷ checks run','Data analyst / IT','Every refresh','Validation layer'],
+  ];
+  $('kpiDict').innerHTML='<thead><tr><th>Metric</th><th>Definition</th><th>Owner</th><th>Cadence</th><th>Source</th></tr></thead><tbody>'+rows.map(r=>`<tr><td><b>${r[0]}</b></td><td style="font-size:12.5px">${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td class="muted">${r[4]}</td></tr>`).join('')+'</tbody>';
+}
+
 /* ============================== WIRING ============================== */
 let active='overview';
 function render(){
   $('fCount').textContent = `${fmt(P().length)} patients · ${fmt(A().length)} appointments in view`;
-  ({overview:renderOverview,quality:renderQuality,access:renderAccess,gaps:renderGaps,sim:renderSim,medicaid:renderMedicaid,dq:renderDQ,method:renderMethod})[active]();
+  ({overview:renderOverview,quality:()=>{renderQuality();renderVbc()},equity:renderEquity,access:renderAccess,finance:renderFinance,gaps:renderGaps,sim:renderSim,medicaid:renderMedicaid,dq:()=>{renderDQ();renderUds()},method:()=>{renderMethod();renderKpiDict()}})[active]();
 }
 function go(tab){
   active=tab;
@@ -806,6 +1049,8 @@ function go(tab){
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>go(b.dataset.tab));
 document.querySelectorAll('[data-goto]').forEach(a=>a.onclick=e=>{e.preventDefault();go(a.dataset.goto)});
 ['mPps','mSlide','mLapse'].forEach(id=>$(id).oninput=renderMedicaid);
+['fNov','fDec','fBud','prodTarget'].forEach(id=>$(id).oninput=renderFinance);
+$('printBtn').onclick=()=>{ const t=document.documentElement.dataset.theme; document.documentElement.dataset.theme='light'; render(); setTimeout(()=>{ window.print(); document.documentElement.dataset.theme=t; render(); },300); };
 $('themeBtn').onclick=()=>{ const cur=document.documentElement.dataset.theme; const next=cur==='dark'?'light':'dark'; document.documentElement.dataset.theme=next; try{localStorage.setItem('qcc-theme',next)}catch(e){} render(); };
 try{ const t=localStorage.getItem('qcc-theme'); if(t) document.documentElement.dataset.theme=t; }catch(e){}
 // heatmap tooltip
@@ -817,7 +1062,7 @@ $('daysleft').textContent = daysLeft()+' days left in UDS period';
 $('seed').textContent = SEED;
 initFilters(); initSim();
 const start = (location.hash||'').slice(1);
-go(['overview','quality','access','gaps','sim','medicaid','dq','method'].includes(start)?start:'overview');
+go(['overview','quality','equity','access','finance','gaps','sim','medicaid','dq','method'].includes(start)?start:'overview');
 </script>
 </body>
 </html>
