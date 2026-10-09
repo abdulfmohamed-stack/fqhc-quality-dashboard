@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Health Center Quality Command Center</title>
+<meta name="description" content="UDS clinical quality, access, care-gap and Medicaid redetermination analytics for a multi-site FQHC — demonstration with synthetic data.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  color-scheme:light;
+  --page:#f9f9f7; --surface:#fcfcfb; --surface-2:#f2f1ed; --border:rgba(11,11,11,.10);
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781; --grid:#e1e0d9; --axis:#c3c2b7;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s7:#4a3aa7;
+  --good:#0ca30c; --good-ink:#006300; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --accent:#2a78d6; --seq-lo:#cde2fb; --seq-hi:#104281;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --page:#0d0d0d; --surface:#1a1a19; --surface-2:#232321; --border:rgba(255,255,255,.10);
+    --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781; --grid:#2c2c2a; --axis:#383835;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s7:#9085e9;
+    --good-ink:#0ca30c; --accent:#3987e5; --seq-lo:#1c2a3d; --seq-hi:#86b6ef;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --page:#0d0d0d; --surface:#1a1a19; --surface-2:#232321; --border:rgba(255,255,255,.10);
+  --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781; --grid:#2c2c2a; --axis:#383835;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s7:#9085e9;
+  --good-ink:#0ca30c; --accent:#3987e5; --seq-lo:#1c2a3d; --seq-hi:#86b6ef;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--page);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+.wrap{max-width:1360px;margin:0 auto;padding:0 16px 48px}
+header.top{display:flex;gap:16px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;padding:22px 0 14px;border-bottom:1px solid var(--border)}
+.eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-size:24px;margin:4px 0 2px;letter-spacing:-.01em}
+.sub{color:var(--ink-2);font-size:13px}
+.hdr-right{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--ink-2);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--good)}
+button,select,input{font:inherit;color:var(--ink)}
+.btn{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent}
+.banner{margin:14px 0 0;padding:10px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--border);color:var(--ink-2);font-size:12.5px;display:flex;gap:10px;align-items:flex-start}
+.banner b{color:var(--ink)}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;margin:16px 0 0;border-bottom:1px solid var(--border);scrollbar-width:none}
+nav.tabs button{background:none;border:0;padding:10px 14px;color:var(--ink-2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;font-weight:500}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:14px 0}
+.filters label{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.filters select,.filters input{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;min-width:150px;text-transform:none;letter-spacing:0;font-weight:400}
+.grid{display:grid;gap:14px}
+.g6{grid-template-columns:repeat(6,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g21{grid-template-columns:2fr 1fr}
+.g12{grid-template-columns:1fr 2fr}
+@media (max-width:1100px){.g6{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(2,1fr)}.g21,.g12,.g3{grid-template-columns:1fr}}
+@media (max-width:640px){.g6,.g4,.g2{grid-template-columns:1fr 1fr}.g2.stack{grid-template-columns:1fr}h1{font-size:20px}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;min-width:0}
+.card h3{margin:0 0 2px;font-size:14px;font-weight:600}
+.card .hint{color:var(--muted);font-size:12px;margin:0 0 10px}
+.tile .lbl{font-size:12px;color:var(--ink-2)}
+.tile .val{font-size:28px;font-weight:650;letter-spacing:-.02em;margin:4px 0 2px}
+.tile .delta{font-size:12px;color:var(--muted)}
+.up{color:var(--good-ink)} .down{color:var(--crit)}
+.chart{position:relative;height:260px}
+.chart.tall{height:320px}
+.chart.short{height:200px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--grid);vertical-align:middle}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--surface);z-index:1}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:var(--surface-2)}
+tr.sel{background:var(--surface-2)}
+.scroll{max-height:520px;overflow:auto;border-radius:8px}
+.status{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;white-space:nowrap}
+.status i{font-style:normal;width:16px;height:16px;border-radius:50%;display:inline-grid;place-items:center;font-size:10px;color:#111}
+.s-good i{background:var(--good)} .s-warn i{background:var(--warn)} .s-crit i{background:var(--crit);color:#fff}
+.bar-cell{display:flex;align-items:center;gap:8px;min-width:150px}
+.track{flex:1;height:8px;border-radius:4px;background:var(--surface-2);position:relative;overflow:visible}
+.fill{height:100%;border-radius:4px;background:var(--s1)}
+.mark{position:absolute;top:-4px;width:2px;height:16px;background:var(--ink-2)}
+.chip{display:inline-block;padding:2px 7px;border-radius:6px;font-size:11px;background:var(--surface-2);border:1px solid var(--border);margin:1px 3px 1px 0;white-space:nowrap}
+.insights{display:grid;gap:10px}
+.insight{border-left:3px solid var(--accent);padding:6px 12px;background:var(--surface-2);border-radius:0 8px 8px 0;font-size:13px}
+.insight b{font-weight:600}
+.heat{display:grid;grid-template-columns:48px repeat(10,1fr);gap:2px;font-size:11px}
+.heat .h{color:var(--muted);text-align:center;padding:2px 0}
+.heat .r{color:var(--muted);display:flex;align-items:center}
+.heat .c{height:34px;border-radius:4px;display:grid;place-items:center;font-variant-numeric:tabular-nums;cursor:default}
+.heat .c.na{background:transparent;border:1px dashed var(--grid)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);margin-top:8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.sim{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 18px}
+.sim label{font-size:12px;color:var(--ink-2);display:flex;flex-direction:column;gap:4px}
+.sim input[type=range]{width:100%;accent-color:var(--accent)}
+.sim .v{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.big{font-size:40px;font-weight:700;letter-spacing:-.02em}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 14px;font-size:13px}
+.kv div:nth-child(odd){color:var(--ink-2)} .kv div:nth-child(even){text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+pre{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;overflow:auto;font-size:12px;line-height:1.5}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.flow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12.5px}
+.flow .n{padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2)}
+.flow .a{color:var(--muted)}
+.tabpanel{display:none}.tabpanel.on{display:block}
+.mt{margin-top:14px}
+.muted{color:var(--muted)}
+.tt{position:fixed;pointer-events:none;background:var(--surface);border:1px solid var(--border);box-shadow:0 6px 20px rgba(0,0,0,.25);padding:6px 9px;border-radius:8px;font-size:12px;z-index:50;display:none}
+footer{margin-top:28px;color:var(--muted);font-size:12px;border-top:1px solid var(--border);padding-top:14px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.sr{position:absolute;left:-9999px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div>
+    <div class="eyebrow">Community Health Center · Quality &amp; Operations</div>
+    <h1>Quality Command Center</h1>
+    <div class="sub">UDS clinical quality, access, care-gap closure &amp; Medicaid redetermination — built around Alivio Medical Center's sites and programs</div>
+  </div>
+  <div class="hdr-right">
+    <span class="pill"><span class="dot"></span>Measurement period CY2026 · data through <b id="asof"></b></span>
+    <span class="pill" id="daysleft"></span>
+    <button class="btn" id="themeBtn" aria-label="Toggle light or dark theme">◐ Theme</button>
+  </div>
+</header>
+
+<div class="banner" role="note">
+  <span>ⓘ</span>
+  <span><b>Demonstration build with synthetic data.</b> Every patient, visit and rate below is generated (seeded, reproducible) to mirror the shape of a 4-site FQHC panel — no PHI, and no claim about Alivio's real performance. Measure logic follows HRSA UDS Table 6B/7 and CMS eCQM definitions; national comparisons are labelled with their source year. In production, the generator is swapped for an eClinicalWorks extract (see <a href="#" data-goto="method">Methodology</a>).</span>
+</div>
+
+<nav class="tabs" role="tablist" id="tabs">
+  <button role="tab" data-tab="overview" aria-selected="true">Executive overview</button>
+  <button role="tab" data-tab="quality">UDS clinical quality</button>
+  <button role="tab" data-tab="access">Access &amp; no-shows</button>
+  <button role="tab" data-tab="gaps">Care-gap worklist</button>
+  <button role="tab" data-tab="sim">Gap-closure planner</button>
+  <button role="tab" data-tab="medicaid">Medicaid redetermination</button>
+  <button role="tab" data-tab="dq">Data quality</button>
+  <button role="tab" data-tab="method">Methodology</button>
+</nav>
+
+<div class="filters" id="filters">
+  <label>Site<select id="fSite"></select></label>
+  <label>Payer<select id="fPayer"></select></label>
+  <label>Preferred language<select id="fLang"></select></label>
+  <button class="btn" id="fReset" style="align-self:flex-end">Reset</button>
+  <span class="muted" id="fCount" style="align-self:flex-end;font-size:12px"></span>
+</div>
+
+<!-- OVERVIEW -->
+<section class="tabpanel on" id="p-overview">
+  <div class="grid g6" id="kpis"></div>
+  <div class="grid g21 mt">
+    <div class="card"><h3>Completed visits by month</h3><p class="hint">Medical visits, Jan–Sep 2026. No-show rate is charted separately below — one scale per chart.</p><div class="chart"><canvas id="cVisits"></canvas></div></div>
+    <div class="card"><h3>What needs attention this week</h3><p class="hint">Generated from the current filter — recalculates as you change site, payer or language.</p><div class="insights" id="insights"></div></div>
+  </div>
+  <div class="grid g3 mt">
+    <div class="card"><h3>No-show rate by month</h3><p class="hint">Share of scheduled medical appointments not kept.</p><div class="chart short"><canvas id="cNsMonth"></canvas></div></div>
+    <div class="card"><h3>Payer mix · unique patients</h3><p class="hint">Sliding-fee / uninsured share drives grant and PPS strategy.</p><div class="chart short"><canvas id="cPayer"></canvas></div></div>
+    <div class="card"><h3>Measures vs target</h3><p class="hint">9 UDS measures tracked; target editable on the quality tab.</p><div class="chart short"><canvas id="cScore"></canvas></div></div>
+  </div>
+</section>
+
+<!-- QUALITY -->
+<section class="tabpanel" id="p-quality">
+  <div class="card">
+    <h3>UDS clinical quality measures · CY2026 year-to-date</h3>
+    <p class="hint">Click a row to drill into its trend, site spread and equity view. "To close" = additional patients who must meet the measure to reach target (for the inverse diabetes measure, patients who must move below 9%). Targets are editable.</p>
+    <div class="scroll" style="max-height:none"><table id="qTable"></table></div>
+  </div>
+  <div class="grid g3 mt">
+    <div class="card"><h3 id="qTrendTitle">Cumulative rate by month</h3><p class="hint">YTD rate as numerator events accrue (prior-year lookback screenings count from January).</p><div class="chart"><canvas id="cQTrend"></canvas></div></div>
+    <div class="card"><h3>By site</h3><p class="hint">Same measure, all sites — ignores the site filter so sites stay comparable.</p><div class="chart"><canvas id="cQSite"></canvas></div></div>
+    <div class="card"><h3>Equity view</h3><p class="hint">Rate by preferred language and payer. Gaps over 5 pts are flagged.</p><div class="chart"><canvas id="cQEq"></canvas></div></div>
+  </div>
+</section>
+
+<!-- ACCESS -->
+<section class="tabpanel" id="p-access">
+  <div class="grid g4" id="accKpis"></div>
+  <div class="grid g12 mt">
+    <div class="card"><h3>No-show rate by booking lead time</h3><p class="hint">The single strongest driver in most FQHC schedules.</p><div class="chart"><canvas id="cLead"></canvas></div></div>
+    <div class="card"><h3>No-show heatmap · weekday × start hour</h3><p class="hint">Darker = higher no-show rate. Saturdays reflect the every-other-weekend clinics at Morgan, Western and Berwyn. Hover a cell for counts.</p><div id="heat" class="heat"></div><div class="legend" id="heatLegend"></div></div>
+  </div>
+  <div class="grid g2 mt">
+    <div class="card"><h3>No-show rate by site</h3><p class="hint">Scheduled medical appointments, YTD.</p><div class="chart short"><canvas id="cNsSite"></canvas></div></div>
+    <div class="card"><h3>Booking channel</h3><p class="hint">Portal self-scheduling vs phone/front desk — no-show rate and share of bookings.</p><div class="chart short"><canvas id="cChannel"></canvas></div></div>
+  </div>
+</section>
+
+<!-- GAPS -->
+<section class="tabpanel" id="p-gaps">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-end">
+      <div><h3>Open care gaps · prioritized outreach list</h3><p class="hint" style="margin:0">Priority = open gaps × outcome weight + no upcoming appointment + time since last visit. Built for CHW and front-desk huddles. Synthetic IDs only.</p></div>
+      <div class="filters" style="padding:0">
+        <label>Measure<select id="gMeasure"></select></label>
+        <label>Upcoming appt<select id="gAppt"><option value="all">Any</option><option value="yes">Scheduled — close at visit</option><option value="no">None — needs outreach</option></select></label>
+        <label>Search ID<input id="gSearch" placeholder="DEMO-…"></label>
+        <button class="btn primary" id="gExport" style="align-self:flex-end">Export CSV</button>
+      </div>
+    </div>
+    <div class="grid g4 mt" id="gKpis"></div>
+    <div class="scroll mt"><table id="gTable"></table></div>
+    <p class="hint mt" id="gFoot"></p>
+  </div>
+</section>
+
+<!-- SIM -->
+<section class="tabpanel" id="p-sim">
+  <div class="grid g2 stack">
+    <div class="card">
+      <h3>Will we hit target by December 31?</h3>
+      <p class="hint">Outreach funnel for one measure. Defaults are deliberately conservative — every rate is a dial, so leadership can see the assumptions instead of trusting a single number.</p>
+      <div class="filters" style="padding:0 0 10px"><label>Measure<select id="sMeasure"></select></label></div>
+      <div class="sim" id="simInputs"></div>
+    </div>
+    <div class="card">
+      <h3>Projected year-end rate</h3>
+      <p class="hint" id="sNote"></p>
+      <div style="display:flex;gap:28px;align-items:flex-end;flex-wrap:wrap">
+        <div><div class="muted" style="font-size:12px">Projected Dec 31</div><div class="big" id="sProj"></div></div>
+        <div><div class="muted" style="font-size:12px">Target</div><div class="big" id="sTarget" style="color:var(--ink-2)"></div></div>
+        <div id="sStatus"></div>
+      </div>
+      <div class="chart short mt"><canvas id="cSim"></canvas></div>
+      <div class="kv mt" id="sKv"></div>
+    </div>
+  </div>
+</section>
+
+<!-- MEDICAID -->
+<section class="tabpanel" id="p-medicaid">
+  <div class="grid g4" id="mKpis"></div>
+  <div class="grid g21 mt">
+    <div class="card"><h3>Redeterminations due · next 6 months</h3><p class="hint">Medicaid patients by renewal month and enrollment-counselor status. Each segment is a status; months beyond 90 days have mostly not started.</p><div class="chart tall"><canvas id="cRedet"></canvas></div></div>
+    <div class="card"><h3>Revenue at risk</h3><p class="hint">If coverage lapses, visits shift to sliding fee. Assumptions are editable and shown — not hidden in a total.</p>
+      <div class="sim" style="grid-template-columns:1fr">
+        <label>Medicaid PPS rate per visit (assumption) <span class="v" id="vPps"></span><input type="range" id="mPps" min="120" max="320" step="5" value="210"></label>
+        <label>Sliding-fee collection per visit (assumption) <span class="v" id="vSlide"></span><input type="range" id="mSlide" min="0" max="60" step="5" value="25"></label>
+        <label>Lapse rate if not submitted before due date <span class="v" id="vLapse"></span><input type="range" id="mLapse" min="5" max="60" step="1" value="25"></label>
+      </div>
+      <div class="kv mt" id="mKv"></div>
+    </div>
+  </div>
+</section>
+
+<!-- DQ -->
+<section class="tabpanel" id="p-dq">
+  <div class="grid g12">
+    <div class="card"><h3>Why data quality is a quality measure</h3><p class="hint">Documentation gaps don't just look bad — they move UDS rates.</p><div id="dqStory" class="insights"></div></div>
+    <div class="card"><h3>EHR extract validation checks</h3><p class="hint">Run on every refresh before any measure is published. Thresholds reflect UDS reporting tolerance.</p><div class="scroll"><table id="dqTable"></table></div></div>
+  </div>
+</section>
+
+<!-- METHOD -->
+<section class="tabpanel" id="p-method">
+  <div class="grid g2 stack">
+    <div class="card">
+      <h3>Pipeline</h3><p class="hint">How this would run on real data — monthly for UDS tracking, weekly for worklists.</p>
+      <div class="flow"><span class="n">eClinicalWorks<br><span class="muted">encounters, vitals, labs, problem list</span></span><span class="a">→</span><span class="n">SQL extract<br><span class="muted">nightly, de-identified view</span></span><span class="a">→</span><span class="n">Validation<br><span class="muted">Data-quality checks</span></span><span class="a">→</span><span class="n">Measure engine<br><span class="muted">eCQM logic per UDS manual</span></span><span class="a">→</span><span class="n">This dashboard<br><span class="muted">static, GitHub Pages / intranet</span></span></div>
+      <h3 class="mt">Measure definitions</h3>
+      <div class="scroll" style="max-height:none"><table id="defTable"></table></div>
+    </div>
+    <div class="card">
+      <h3>Example measure query — Controlling High Blood Pressure (CMS165)</h3>
+      <p class="hint">Illustrative SQL against a generic encounter/vitals model; table names would map to the eCW reporting schema.</p>
+<pre><code>WITH universe AS (            -- UDS patient: ≥1 countable visit in period
+  SELECT DISTINCT patient_id FROM encounters
+  WHERE enc_date BETWEEN '2026-01-01' AND '2026-12-31'
+    AND is_uds_countable = 1
+),
+denom AS (                    -- age 18–85, HTN dx overlapping period
+  SELECT p.patient_id FROM patients p
+  JOIN universe u USING (patient_id)
+  JOIN problems pr ON pr.patient_id = p.patient_id
+   AND pr.value_set = 'Essential Hypertension'
+   AND pr.onset_date &lt;= '2026-06-30'
+  WHERE DATEDIFF(year, p.dob, '2026-12-31') BETWEEN 18 AND 85
+  EXCEPT SELECT patient_id FROM exclusions_cms165   -- hospice, ESRD, frailty…
+),
+last_bp AS (                  -- most recent BP in period
+  SELECT patient_id, systolic, diastolic,
+         ROW_NUMBER() OVER (PARTITION BY patient_id
+                            ORDER BY vital_date DESC) rn
+  FROM vitals WHERE vital_date BETWEEN '2026-01-01' AND '2026-12-31'
+)
+SELECT COUNT(*)                                        AS denominator,
+       SUM(CASE WHEN b.systolic &lt; 140
+                 AND b.diastolic &lt; 90 THEN 1 ELSE 0 END) AS numerator
+FROM denom d
+LEFT JOIN last_bp b ON b.patient_id = d.patient_id AND b.rn = 1;</code></pre>
+      <h3 class="mt">Synthetic data model</h3>
+      <p class="hint" style="margin:0">A seeded generator creates <span id="nPat"></span> patients and <span id="nAppt"></span> appointments. Probabilities shift by site, payer, visit count, CHW enrollment and portal use, and no-shows by lead time, hour, weekday and channel — so the patterns are plausible, not random noise. Re-generating with the same seed returns identical numbers.</p>
+      <h3 class="mt">National comparison sources</h3>
+      <p class="hint" style="margin:0">HTN control (63%) and uncontrolled diabetes (30%): HRSA 2022 UDS Trends data brief. Cervical (53%) and colorectal (42%) screening: national UDS figures cited in a NACHC field example (2019–20 reporting). Measures without a cited national figure show only the internal target. Replace with the current-year UDS national and Illinois comparison before use.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span>Prepared by Abdul — Health Data Analyst candidate · demonstration only</span>
+  <span>Synthetic data · seed <span id="seed"></span> · no PHI</span>
+</footer>
+</div>
+<div class="tt" id="tt"></div>
+
+<script>
+/* ============================== CONFIG ============================== */
+const SEED = 20261009;
+const ASOF = new Date(2026, 8, 30);           // data through Sep 30 2026
+const PERIOD_END = new Date(2026, 11, 31);
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep'];
+const SITES = [
+  {id:'MOR', name:'Morgan Street', w:.37, adj:.03, sat:true},
+  {id:'WES', name:'Western Ave',   w:.27, adj:-.04, sat:true},
+  {id:'BER', name:'Berwyn',        w:.26, adj:.01, sat:true},
+  {id:'SBH', name:'School-based (3)', w:.10, adj:.00, sat:false},
+];
+const PAYERS = ['Medicaid','Uninsured / sliding fee','Medicare','Private'];
+const LANGS = ['Spanish','English','Other'];
+
+/* Measures: elig(p) → in denominator; base = probability of the "good" outcome. inverse=true → reported rate is the BAD outcome (lower is better). */
+const MEASURES = [
+  {id:'htn', name:'Controlling high blood pressure', ecqm:'CMS165', table:'7', base:.63, bench:63, target:65, lookback:0,
+   def:'Adults 18–85 with hypertension whose most recent BP in the period is <140/90.', elig:p=>p.htn && p.age>=18 && p.age<=85},
+  {id:'dm', name:'Diabetes: HbA1c poor control (>9%)', ecqm:'CMS122', table:'7', base:.70, bench:30, target:28, inverse:true, lookback:0,
+   def:'Adults 18–75 with diabetes whose most recent HbA1c is >9% or who had no HbA1c test in the period. Inverse — lower is better.', elig:p=>p.dm && p.age>=18 && p.age<=75},
+  {id:'cerv', name:'Cervical cancer screening', ecqm:'CMS124', table:'6B', base:.54, bench:53, target:55, lookback:.72,
+   def:'Women 21–64 screened with cytology (3 yrs) or HPV co-testing (5 yrs, age 30+).', elig:p=>p.sex==='F' && p.age>=21 && p.age<=64},
+  {id:'crc', name:'Colorectal cancer screening', ecqm:'CMS130', table:'6B', base:.40, bench:42, target:45, lookback:.70,
+   def:'Adults 45–75 with appropriate CRC screening (colonoscopy 10 yrs, FIT annually, FIT-DNA 3 yrs, CT colonography 5 yrs).', elig:p=>p.age>=45 && p.age<=75},
+  {id:'brst', name:'Breast cancer screening', ecqm:'CMS125', table:'6B', base:.51, target:50, lookback:.55,
+   def:'Women 52–74 with a mammogram in the 27 months before period end.', elig:p=>p.sex==='F' && p.age>=52 && p.age<=74},
+  {id:'dep', name:'Depression screening & follow-up', ecqm:'CMS2', table:'6B', base:.73, target:75, lookback:0,
+   def:'Patients 12+ screened with a standardized tool and, if positive, a documented follow-up plan.', elig:p=>p.age>=12},
+  {id:'tob', name:'Tobacco screening & cessation', ecqm:'CMS138', table:'6B', base:.86, target:85, lookback:0,
+   def:'Patients 12+ screened for tobacco use and, if a user, given cessation intervention.', elig:p=>p.age>=12},
+  {id:'bmi', name:'Child/adolescent weight assessment & counseling', ecqm:'CMS155', table:'6B', base:.71, target:75, lookback:0,
+   def:'Patients 3–17 with BMI percentile, nutrition and physical activity counseling documented.', elig:p=>p.age>=3 && p.age<=17},
+  {id:'pnc', name:'Early entry into prenatal care', ecqm:'UDS', table:'6B', base:.68, target:72, lookback:0,
+   def:'Prenatal patients whose first prenatal visit was in the first trimester.', elig:p=>p.preg},
+];
+const MBYID = Object.fromEntries(MEASURES.map(m=>[m.id,m]));
+/* Outcome weight for prioritization (outcome measures > process measures) */
+const WEIGHT = {htn:3, dm:3, pnc:3, crc:2, cerv:2, brst:2, dep:1.5, tob:1, bmi:1};
+
+/* ============================== RNG & GENERATION ============================== */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const R = mulberry32(SEED);
+const pick = (arr, ws) => {let x=R()*ws.reduce((a,b)=>a+b,0);for(let i=0;i<arr.length;i++){x-=ws[i];if(x<=0)return arr[i]}return arr[arr.length-1]};
+const clamp = (x,a=0.02,b=.98)=>Math.max(a,Math.min(b,x));
+const randInt=(a,b)=>a+Math.floor(R()*(b-a+1));
+function poisson(l){let L=Math.exp(-l),k=0,p=1;do{k++;p*=R()}while(p>L);return k-1}
+
+const patients=[], appts=[];
+const N = 14000;
+for(let i=0;i<N;i++){
+  const site = pick(SITES, SITES.map(s=>s.w));
+  let age;
+  if(site.id==='SBH') age = randInt(5,18);
+  else { const b = pick([0,1,2,3],[28,34,27,11]); age = b===0?randInt(0,17):b===1?randInt(18,44):b===2?randInt(45,64):randInt(65,90); }
+  const sex = R()<.58?'F':'M';
+  let payer;
+  if(age>=65) payer = pick(PAYERS,[25,10,60,5]);
+  else if(age<18) payer = pick(PAYERS,[82,6,0,12]);
+  else payer = pick(PAYERS,[48,30,4,18]);
+  const lang = site.id==='BER' ? pick(LANGS,[55,42,3]) : pick(LANGS,[70,27,3]);
+  const visits = 1 + poisson(age>=45?2.6:1.8);
+  const portal = R() < (lang==='English'?.48:.27) * (age>=65?.6:1);
+  const htn = age>=18 && R()<(age<45?.08:age<65?.32:.58);
+  const dm  = age>=18 && R()<(age<45?.04:age<65?.18:.28);
+  const preg = sex==='F' && age>=18 && age<=40 && R()<.045;
+  const chw = (htn||dm) && R()<.14;
+  const lastVisitDay = Math.floor(273 * Math.pow(R(), .55)); // skewed recent
+  const lastVisit = new Date(2026,8,30 - lastVisitDay);
+  const nextAppt = R() < (htn||dm||preg ? .42 : .24);
+  const p = {id:'DEMO-'+String(10000+i), site:site.id, age, sex, payer, lang, visits, portal, htn, dm, preg, chw, lastVisit, nextAppt, m:{}, metMonth:{}};
+  // data quality flags
+  p.dqRace = R()<.031; p.dqSogi = R()<.19; p.dqZip = R()<.012; p.dqAttr = R()<.024;
+  p.dqA1cScanned = false;
+  // measures
+  const payAdj = payer==='Uninsured / sliding fee'?-.07 : payer==='Private'?.02 : 0;
+  const visAdj = Math.min(visits,6)*.025 - .06;
+  for(const m of MEASURES){
+    if(!m.elig(p)) continue;
+    let adj = site.adj + payAdj + visAdj + (chw?.09:0) + (portal?.03:0);
+    if(m.id==='crc' && site.id==='WES') adj -= .05;           // a real-looking site gap
+    if(m.id==='brst' && lang==='Other') adj -= .08;
+    if(m.id==='dep' && lang==='Spanish') adj -= .04;          // screening-tool language gap
+    if((m.id==='bmi') && site.id==='SBH') adj += .08;
+    let good = R() < clamp(m.base + adj);
+    if(m.id==='dm' && !good && R()<.14){ p.dqA1cScanned = true; } // result exists but sits in a scanned document → counts as "no test"
+    p.m[m.id] = good;
+    if(good){
+      p.metMonth[m.id] = (m.lookback && R()<m.lookback) ? 0 : Math.min(9, 1+Math.floor(Math.pow(R(),.9)*9));
+    } else if(m.inverse){
+      p.metMonth[m.id] = 1+Math.floor(R()*9); // month the bad state was last observed
+    }
+  }
+  // Medicaid redetermination due (days from Oct 1 2026)
+  if(payer==='Medicaid'){
+    p.redetDays = Math.floor(R()*365);
+    const d = p.redetDays;
+    p.redetStatus = d<=30 ? pick(['Not started','Contacted','Submitted','Approved'],[22,24,34,20])
+                 : d<=90 ? pick(['Not started','Contacted','Submitted','Approved'],[46,30,18,6])
+                 : pick(['Not started','Contacted','Submitted','Approved'],[82,14,4,0]);
+  }
+  patients.push(p);
+
+  // appointments: schedule until `visits` kept
+  let kept=0, guard=0;
+  while(kept<visits && guard<20){
+    guard++;
+    const month = Math.min(8, Math.floor(R()*9 + (site.id==='SBH' && R()<.25 ? 0 : 0)));
+    const sat = site.sat && R()<.05;
+    const dow = sat ? 6 : randInt(1,5);
+    const hour = sat ? randInt(8,14) : pick([8,9,10,11,12,13,14,15,16,17],[9,11,11,10,6,10,11,10,9,5]);
+    const lead = pick([0,1,5,12,25,45],[16,18,22,20,14,10]) + randInt(0,4);
+    const viaPortal = portal && R()<.55;
+    let ns = .155;
+    ns += lead>=40?.12 : lead>=21?.07 : lead>=8?.025 : lead<=2?-.07 : 0;
+    ns += hour===8?.025 : hour>=16?.035 : hour===12?.01 : 0;
+    ns += dow===1?.02 : dow===5?.03 : dow===6?-.03 : 0;
+    ns += payer==='Uninsured / sliding fee'?.04 : payer==='Private'?-.03 : 0;
+    ns += viaPortal?-.035:0;
+    ns += site.id==='WES'?.02 : site.id==='SBH'?-.05 : 0;
+    ns += (month===6||month===7)?.02:0;
+    const noshow = R()<clamp(ns,.02,.6);
+    appts.push({site:site.id,payer,lang,month,dow,hour,lead,viaPortal,noshow});
+    if(!noshow) kept++;
+  }
+}
+
+/* ============================== STATE & HELPERS ============================== */
+const state = {site:'all', payer:'all', lang:'all', qSel:'crc', gMeasure:'all', gAppt:'all', gSearch:'', gSort:'pri', sMeasure:'crc'};
+const targets = Object.fromEntries(MEASURES.map(m=>[m.id,m.target]));
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt = n => n.toLocaleString('en-US');
+const pct = (n,d=1)=> (n*100).toFixed(d)+'%';
+const money = n => '$'+Math.round(n).toLocaleString('en-US');
+const $ = id => document.getElementById(id);
+const siteName = id => SITES.find(s=>s.id===id).name;
+
+function fp(p, ignoreSite=false){ return (ignoreSite||state.site==='all'||p.site===state.site) && (state.payer==='all'||p.payer===state.payer) && (state.lang==='all'||p.lang===state.lang); }
+const P = (ign)=>patients.filter(p=>fp(p,ign));
+const A = (ign)=>appts.filter(a=>fp(a,ign));
+
+function measureStats(m, pts){
+  let den=0,num=0;
+  for(const p of pts){ if(!(m.id in p.m)) continue; den++; const good=p.m[m.id]; if(m.inverse? !good : good) num++; }
+  const rate = den? num/den : 0;
+  const t = targets[m.id]/100;
+  let toClose = 0, meets;
+  if(m.inverse){ meets = rate<=t; toClose = meets?0:Math.ceil(num - t*den); }
+  else { meets = rate>=t; toClose = meets?0:Math.ceil(t*den - num); }
+  return {den,num,rate,meets,toClose};
+}
+function openGaps(p){ const g=[]; for(const m of MEASURES){ if(!(m.id in p.m)) continue; if(!p.m[m.id]) g.push(m.id);} return g; }
+function statusBadge(ok, near){ return ok ? '<span class="status s-good"><i>✓</i>Meets target</span>' : near ? '<span class="status s-warn"><i>!</i>Within 3 pts</span>' : '<span class="status s-crit"><i>✕</i>Below target</span>'; }
+
+/* ============================== CHARTS ============================== */
+const charts = {};
+function baseOpts(extra={}){
+  const ink2=css('--ink-2'), grid=css('--grid'), muted=css('--muted');
+  return Object.assign({
+    responsive:true, maintainAspectRatio:false, animation:{duration:250},
+    interaction:{mode:'index', intersect:false},
+    plugins:{legend:{display:false, labels:{color:ink2, boxWidth:10, boxHeight:10, useBorderRadius:true, borderRadius:3}},
+      tooltip:{backgroundColor:css('--surface'), titleColor:css('--ink'), bodyColor:ink2, borderColor:css('--axis'), borderWidth:1, padding:9, cornerRadius:8}},
+    scales:{x:{grid:{display:false}, ticks:{color:muted}, border:{color:css('--axis')}},
+            y:{grid:{color:grid}, ticks:{color:muted}, border:{display:false}, beginAtZero:true}}
+  }, extra);
+}
+function mk(id, cfg){ if(charts[id]) charts[id].destroy(); charts[id] = new Chart($(id), cfg); }
+const siteColor = id => css(['--s1','--s2','--s3','--s4'][SITES.findIndex(s=>s.id===id)]);
+const barDs = (data, color, extra={}) => Object.assign({data, backgroundColor:color, borderRadius:{topLeft:4,topRight:4}, borderSkipped:'bottom', maxBarThickness:38, borderColor:css('--surface'), borderWidth:{left:1,right:1}}, extra);
+const pctAxis = (max) => ({grid:{color:css('--grid')}, ticks:{color:css('--muted'), callback:v=>v+'%'}, border:{display:false}, beginAtZero:true, max});
+
+/* ============================== FILTER UI ============================== */
+function initFilters(){
+  $('fSite').innerHTML = '<option value="all">All medical sites</option>'+SITES.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  $('fPayer').innerHTML = '<option value="all">All payers</option>'+PAYERS.map(s=>`<option>${s}</option>`).join('');
+  $('fLang').innerHTML = '<option value="all">All languages</option>'+LANGS.map(s=>`<option>${s}</option>`).join('');
+  $('fSite').onchange=e=>{state.site=e.target.value;render()};
+  $('fPayer').onchange=e=>{state.payer=e.target.value;render()};
+  $('fLang').onchange=e=>{state.lang=e.target.value;render()};
+  $('fReset').onclick=()=>{state.site=state.payer=state.lang='all';$('fSite').value=$('fPayer').value=$('fLang').value='all';render()};
+  const opts = MEASURES.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  $('gMeasure').innerHTML = '<option value="all">All open gaps</option>'+opts;
+  $('sMeasure').innerHTML = MEASURES.filter(m=>!m.inverse).map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  $('sMeasure').value = state.sMeasure;
+  $('gMeasure').onchange=e=>{state.gMeasure=e.target.value;renderGaps()};
+  $('gAppt').onchange=e=>{state.gAppt=e.target.value;renderGaps()};
+  $('gSearch').oninput=e=>{state.gSearch=e.target.value.trim().toUpperCase();renderGaps()};
+  $('sMeasure').onchange=e=>{state.sMeasure=e.target.value;renderSim()};
+  $('gExport').onclick=exportCsv;
+}
+
+/* ============================== OVERVIEW ============================== */
+function renderOverview(){
+  const pts=P(), ap=A();
+  const kept = ap.filter(a=>!a.noshow).length, ns = ap.length-kept;
+  const stats = MEASURES.map(m=>({m, ...measureStats(m,pts)}));
+  const meets = stats.filter(s=>s.meets).length;
+  const gaps = pts.reduce((a,p)=>a+openGaps(p).length,0);
+  const redet90 = pts.filter(p=>p.redetDays!=null && p.redetDays<=90 && p.redetStatus!=='Approved' && p.redetStatus!=='Submitted').length;
+  // prior-quarter comparison for no-show
+  const q2 = ap.filter(a=>a.month>=3&&a.month<=5), q3 = ap.filter(a=>a.month>=6);
+  const nsq2 = q2.filter(a=>a.noshow).length/Math.max(1,q2.length), nsq3 = q3.filter(a=>a.noshow).length/Math.max(1,q3.length);
+  const d = (nsq3-nsq2)*100;
+  const tiles = [
+    ['Unique patients (UDS universe)', fmt(pts.length), 'patients with ≥1 countable visit'],
+    ['Completed medical visits', fmt(kept), `${(kept/Math.max(1,pts.length)).toFixed(1)} per patient YTD`],
+    ['No-show rate', pct(ns/Math.max(1,ap.length)), `<span class="${d>0?'down':'up'}">${d>0?'▲':'▼'} ${Math.abs(d).toFixed(1)} pts</span> Q3 vs Q2`],
+    ['Measures at target', `${meets} / ${MEASURES.length}`, 'UDS Table 6B & 7 measures'],
+    ['Open care gaps', fmt(gaps), `${fmt(pts.filter(p=>openGaps(p).length).length)} patients affected`],
+    ['Medicaid renewals at risk', fmt(redet90), 'due ≤90 days, not yet submitted'],
+  ];
+  $('kpis').innerHTML = tiles.map(t=>`<div class="card tile"><div class="lbl">${t[0]}</div><div class="val">${t[1]}</div><div class="delta">${t[2]}</div></div>`).join('');
+
+  const byM = MONTHS.map((_,i)=>ap.filter(a=>a.month===i));
+  mk('cVisits',{type:'bar',data:{labels:MONTHS,datasets:[barDs(byM.map(x=>x.filter(a=>!a.noshow).length), css('--s1'),{label:'Completed visits'})]},options:baseOpts()});
+  mk('cNsMonth',{type:'line',data:{labels:MONTHS,datasets:[{label:'No-show rate',data:byM.map(x=>+(100*x.filter(a=>a.noshow).length/Math.max(1,x.length)).toFixed(1)),borderColor:css('--s2'),backgroundColor:css('--s2'),borderWidth:2,pointRadius:3,pointHoverRadius:5,tension:.25}]},
+    options:baseOpts({scales:{x:baseOpts().scales.x,y:pctAxis()},plugins:{...baseOpts().plugins,tooltip:{...baseOpts().plugins.tooltip,callbacks:{label:c=>' No-show '+c.parsed.y+'%'}}}})});
+  const pm = PAYERS.map(py=>pts.filter(p=>p.payer===py).length);
+  mk('cPayer',{type:'bar',data:{labels:['Medicaid','Uninsured','Medicare','Private'],datasets:[barDs(pm.map(v=>+(100*v/Math.max(1,pts.length)).toFixed(1)),css('--s1'),{label:'Share of patients'})]},
+    options:baseOpts({indexAxis:'y',scales:{y:{grid:{display:false},ticks:{color:css('--ink-2')},border:{color:css('--axis')}},x:pctAxis()},plugins:{...baseOpts().plugins,tooltip:{...baseOpts().plugins.tooltip,callbacks:{label:c=>` ${c.parsed.x}% · ${fmt(pm[c.dataIndex])} patients`}}}})});
+  charts.cPayer.data.datasets[0].borderRadius={topRight:4,bottomRight:4}; charts.cPayer.data.datasets[0].borderSkipped='left'; charts.cPayer.update();
+  // gap to target, diverging around 0 (positive = better than target)
+  const gaps2 = stats.map(s=>+((s.m.inverse? (targets[s.m.id]/100 - s.rate) : (s.rate - targets[s.m.id]/100))*100).toFixed(1));
+  mk('cScore',{type:'bar',data:{labels:stats.map(s=>s.m.ecqm),datasets:[{data:gaps2,backgroundColor:gaps2.map(v=>v>=0?css('--s1'):css('--crit')),borderRadius:4,borderSkipped:false,maxBarThickness:22}]},
+    options:baseOpts({scales:{x:{grid:{display:false},ticks:{color:css('--muted'),font:{size:10}},border:{color:css('--axis')}},y:{grid:{color:css('--grid')},ticks:{color:css('--muted'),callback:v=>(v>0?'+':'')+v},border:{display:false},title:{display:true,text:'pts vs target',color:css('--muted')}}},
+      plugins:{...baseOpts().plugins,tooltip:{...baseOpts().plugins.tooltip,callbacks:{title:c=>stats[c[0].dataIndex].m.name,label:c=>` ${c.parsed.y>0?'+':''}${c.parsed.y} pts vs target (${pct(stats[c.dataIndex].rate)})`}}}})});
+
+  // insights
+  const ins=[];
+  const worst = stats.filter(s=>!s.meets).sort((a,b)=>b.toClose*WEIGHT[b.m.id]-a.toClose*WEIGHT[a.m.id])[0];
+  if(worst) ins.push(`<b>${worst.m.name}</b> is ${Math.abs((worst.rate-targets[worst.m.id]/100)*100).toFixed(1)} pts from target — <b>${fmt(worst.toClose)} patients</b> to close with ${daysLeft()} days left in the period.`);
+  // site spread on crc
+  const crcSites = SITES.map(s=>({s, r:measureStats(MBYID.crc, patients.filter(p=>p.site===s.id && fp(p,true))).rate})).filter(x=>x.s.id!=='SBH');
+  const lo = crcSites.sort((a,b)=>a.r-b.r)[0], hi=crcSites[crcSites.length-1];
+  ins.push(`Colorectal screening ranges from <b>${pct(lo.r)}</b> at ${lo.s.name} to <b>${pct(hi.r)}</b> at ${hi.s.name}. Matching ${hi.s.name}'s rate would add ~${fmt(Math.round((hi.r-lo.r)*patients.filter(p=>p.site===lo.s.id&&'crc' in p.m&&fp(p,true)).length))} screened patients.`);
+  const longLead = ap.filter(a=>a.lead>=21), short=ap.filter(a=>a.lead<=2);
+  ins.push(`Appointments booked <b>21+ days out</b> no-show at <b>${pct(longLead.filter(a=>a.noshow).length/Math.max(1,longLead.length))}</b> vs ${pct(short.filter(a=>a.noshow).length/Math.max(1,short.length))} for same/next-day — ${pct(longLead.length/Math.max(1,ap.length),0)} of bookings sit in that window.`);
+  const scan = pts.filter(p=>p.dqA1cScanned).length, dmDen = measureStats(MBYID.dm,pts).den;
+  if(dmDen) ins.push(`<b>${fmt(scan)} diabetic patients</b> have an HbA1c result only in a scanned document, so CMS122 counts them as untested. If ~70% of those results are ≤9%, abstracting them improves the rate by about <b>${(70*scan/dmDen).toFixed(1)} pts</b> with no change in care.`);
+  const ch = pts.filter(p=>(p.htn)&&'htn' in p.m), chY=ch.filter(p=>p.chw), chN=ch.filter(p=>!p.chw);
+  const rY = chY.filter(p=>p.m.htn).length/Math.max(1,chY.length), rN = chN.filter(p=>p.m.htn).length/Math.max(1,chN.length);
+  ins.push(`Hypertensive patients enrolled with a <b>Community Health Worker</b> are controlled at ${pct(rY)} vs ${pct(rN)} — an association worth a proper matched comparison before it goes in a grant report.`);
+  $('insights').innerHTML = ins.map(x=>`<div class="insight">${x}</div>`).join('');
+}
+function daysLeft(){ return Math.round((PERIOD_END - new Date(2026,9,9))/864e5); }
+
+/* ============================== QUALITY ============================== */
+function renderQuality(){
+  const pts=P();
+  const rows = MEASURES.map(m=>({m,...measureStats(m,pts)}));
+  $('qTable').innerHTML = `<thead><tr><th>Measure</th><th>eCQM</th><th class="num">Denominator</th><th class="num">Numerator</th><th>Rate vs target</th><th class="num">National</th><th class="num">Target</th><th class="num">To close</th><th>Status</th></tr></thead><tbody>`+
+    rows.map(r=>{
+      const t=targets[r.m.id], rate=r.rate*100, near = !r.meets && Math.abs(rate-t)<=3;
+      const w = Math.min(100,rate);
+      return `<tr data-m="${r.m.id}" class="${state.qSel===r.m.id?'sel':''}" style="cursor:pointer">
+        <td><b>${r.m.name}</b>${r.m.inverse?' <span class="chip">inverse</span>':''}<div class="muted" style="font-size:11px">UDS Table ${r.m.table}</div></td>
+        <td>${r.m.ecqm}</td><td class="num">${fmt(r.den)}</td><td class="num">${fmt(r.num)}</td>
+        <td><div class="bar-cell"><div class="track"><div class="fill" style="width:${w}%;background:${r.meets?'var(--s1)':'var(--crit)'}"></div><div class="mark" style="left:${t}%" title="Target ${t}%"></div></div><span style="font-variant-numeric:tabular-nums;font-weight:600;width:48px;text-align:right">${rate.toFixed(1)}%</span></div></td>
+        <td class="num muted">${r.m.bench!=null? r.m.bench+'%':'—'}</td>
+        <td class="num"><input type="number" min="1" max="99" value="${t}" data-t="${r.m.id}" style="width:56px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:2px 6px;text-align:right" aria-label="Target for ${r.m.name}"></td>
+        <td class="num">${r.toClose?fmt(r.toClose):'—'}</td>
+        <td>${statusBadge(r.meets, near)}</td></tr>`}).join('')+'</tbody>';
+  $('qTable').querySelectorAll('tr[data-m]').forEach(tr=>tr.onclick=e=>{ if(e.target.tagName==='INPUT')return; state.qSel=tr.dataset.m; renderQuality(); });
+  $('qTable').querySelectorAll('input[data-t]').forEach(inp=>inp.onchange=e=>{ const v=Math.max(1,Math.min(99,+e.target.value||1)); targets[inp.dataset.t]=v; render(); });
+
+  const m = MBYID[state.qSel];
+  $('qTrendTitle').textContent = m.name+' · cumulative rate';
+  const den = pts.filter(p=>m.id in p.m);
+  const trend = MONTHS.map((_,i)=>{ const mo=i+1; let n=0; for(const p of den){ if(m.inverse){ if(!p.m[m.id] && p.metMonth[m.id]<=mo) n++; } else if(p.m[m.id] && p.metMonth[m.id]<=mo) n++; } return +(100*n/Math.max(1,den.length)).toFixed(1); });
+  if(m.inverse){ // inverse: early in year, everyone untested counts as poor → show rate of "poor or untested" declining
+    for(let i=0;i<9;i++){ const mo=i+1; let poor=0; for(const p of den){ const g=p.m[m.id]; const testedGood = g && p.metMonth[m.id]<=mo; if(!testedGood) poor++; } trend[i]=+(100*poor/Math.max(1,den.length)).toFixed(1); }
+  }
+  mk('cQTrend',{type:'line',data:{labels:MONTHS,datasets:[
+    {label:'Rate',data:trend,borderColor:css('--s1'),backgroundColor:css('--s1'),borderWidth:2,pointRadius:3,tension:.2},
+    {label:'Target',data:MONTHS.map(()=>targets[m.id]),borderColor:css('--muted'),borderDash:[4,4],borderWidth:1.5,pointRadius:0}
+  ]},options:baseOpts({scales:{x:baseOpts().scales.x,y:pctAxis(100)},plugins:{...baseOpts().plugins,legend:{display:true,position:'bottom',labels:baseOpts().plugins.legend.labels}}})});
+
+  const sitesM = SITES.filter(s=>patients.some(p=>p.site===s.id && m.id in p.m));
+  const bySite = sitesM.map(s=>measureStats(m, patients.filter(p=>p.site===s.id && fp(p,true))));
+  mk('cQSite',{type:'bar',data:{labels:sitesM.map(s=>s.name),datasets:[barDs(bySite.map(x=>+(x.rate*100).toFixed(1)), sitesM.map(s=>siteColor(s.id)),{label:m.name})]},
+    options:baseOpts({scales:{x:{...baseOpts().scales.x,ticks:{color:css('--muted'),font:{size:11}}},y:pctAxis(100)},plugins:{...baseOpts().plugins,tooltip:{...baseOpts().plugins.tooltip,callbacks:{label:c=>` ${c.parsed.y}% · n=${fmt(bySite[c.dataIndex].den)}`}}}})});
+
+  const groups = [...LANGS.map(l=>({k:l, f:p=>p.lang===l})), ...PAYERS.map(py=>({k:py.split(' ')[0], f:p=>p.payer===py}))];
+  const pAll = patients.filter(p=>fp(p,false) || true).filter(p=>(state.site==='all'||p.site===state.site));
+  const eq = groups.map(g=>measureStats(m, pAll.filter(g.f)));
+  const overall = measureStats(m,pAll).rate*100;
+  const eqVals = eq.map(x=>+(x.rate*100).toFixed(1));
+  mk('cQEq',{type:'bar',data:{labels:groups.map(g=>g.k),datasets:[barDs(eqVals, eqVals.map((v,i)=>eq[i].den<30?css('--grid'):(m.inverse? v-overall>5 : overall-v>5)?css('--crit'):css('--s1')),{label:m.name})]},
+    options:baseOpts({scales:{x:{...baseOpts().scales.x,ticks:{color:css('--muted'),font:{size:11}}},y:pctAxis(100)},plugins:{...baseOpts().plugins,tooltip:{...baseOpts().plugins.tooltip,callbacks:{label:c=>{const e=eq[c.dataIndex];return e.den<30?` n=${e.den} — too small to report`:` ${c.parsed.y}% · n=${fmt(e.den)} · ${(c.parsed.y-overall>0?'+':'')+(c.parsed.y-overall).toFixed(1)} pts vs overall`}}}}})});
+}
+
+/* ============================== ACCESS ============================== */
+function renderAccess(){
+  const ap=A(); const nsr = x=>x.filter(a=>a.noshow).length/Math.max(1,x.length);
+  const sat = ap.filter(a=>a.dow===6);
+  const portal = ap.filter(a=>a.viaPortal);
+  const lost = ap.filter(a=>a.noshow).length;
+  $('accKpis').innerHTML = [
+    ['Scheduled appointments', fmt(ap.length), 'Jan–Sep 2026'],
+    ['Missed appointments', fmt(lost), `≈ ${fmt(Math.round(lost/39))} slots lost per week`],
+    ['Saturday no-show rate', pct(nsr(sat)), `${fmt(sat.length)} Saturday bookings vs ${pct(nsr(ap.filter(a=>a.dow!==6)))} weekdays`],
+    ['Portal self-scheduled', pct(portal.length/Math.max(1,ap.length)), `no-show ${pct(nsr(portal))} vs ${pct(nsr(ap.filter(a=>!a.viaPortal)))} other channels`],
+  ].map(t=>`<div class="card tile"><div class="lbl">${t[0]}</div><div class="val">${t[1]}</div><div class="delta">${t[2]}</div></div>`).join('');
+
+  const buckets=[['Same/next day',a=>a.lead<=2],['3–7 days',a=>a.lead>=3&&a.lead<=7],['8–20 days',a=>a.lead>=8&&a.lead<=20],['21–39 days',a=>a.lead>=21&&a.lead<=39],['40+ days',a=>a.lead>=40]];
+  const bv = buckets.map(b=>ap.filter(b[1]));
+  mk('cLead',{type:'bar',data:{labels:buckets.map(b=>b[0]),datasets:[barDs(bv.map(x=>+(100*nsr(x)).toFixed(1)),css('--s1'),{label:'No-show rate'})]},
+    options:baseOpts({scales:{x:baseOpts().scales.x,y:pctAxis()},plugins:{...baseOpts().plugins,tooltip:{...baseOpts().plugins.tooltip,callbacks:{label:c=>` ${c.parsed.y}% no-show · ${fmt(bv[c.dataIndex].length)} appts`}}}})});
+
+  // heatmap
+  const hours=[8,9,10,11,12,13,14,15,16,17], days=[[1,'Mon'],[2,'Tue'],[3,'Wed'],[4,'Thu'],[5,'Fri'],[6,'Sat']];
+  let cells=[], vals=[];
+  for(const [d] of days) for(const h of hours){ const x=ap.filter(a=>a.dow===d&&a.hour===h); const v=x.length>=25?nsr(x):null; cells.push({d,h,n:x.length,v}); if(v!=null) vals.push(v); }
+  const lo=Math.min(...vals), hi=Math.max(...vals);
+  const ramp=['#cde2fb','#9ec5f4','#6da7ec','#3987e5','#256abf','#184f95','#0d366b'];
+  const col=v=>ramp[Math.min(6,Math.floor((v-lo)/Math.max(1e-6,hi-lo)*6.999))];
+  let html='<div></div>'+hours.map(h=>`<div class="h">${h>12?h-12:h}${h>=12?'p':'a'}</div>`).join('');
+  for(const [d,dn] of days){ html+=`<div class="r">${dn}</div>`; for(const h of hours){ const c=cells.find(c=>c.d===d&&c.h===h); if(c.v==null){ html+=`<div class="c na" data-tt="${dn} ${h}:00 · ${c.n?c.n+' appts — too few':'closed'}"></div>`; continue;} const idx=Math.min(6,Math.floor((c.v-lo)/Math.max(1e-6,hi-lo)*6.999)); html+=`<div class="c" style="background:${col(c.v)};color:${idx>=3?'#fff':'#0b0b0b'}" data-tt="${dn} ${h}:00 · ${pct(c.v)} no-show · ${fmt(c.n)} appts">${Math.round(c.v*100)}</div>`; } }
+  $('heat').innerHTML=html;
+  $('heatLegend').innerHTML = `<span>Low ${pct(lo,0)}</span>`+ramp.map(c=>`<i style="background:${c};width:22px"></i>`).join('')+`<span>High ${pct(hi,0)}</span><span class="muted">Dashed = closed or &lt;25 appointments</span>`;
+
+  const siteVals = SITES.map(s=>appts.filter(a=>a.site===s.id&&fp(a,true)));
+  mk('cNsSite',{type:'bar',data:{labels:SITES.map(s=>s.name),datasets:[barDs(siteVals.map(x=>+(100*nsr(x)).toFixed(1)), SITES.map(s=>siteColor(s.id)))]},
+    options:baseOpts({scales:{x:baseOpts().scales.x,y:pctAxis()},plugins:{...baseOpts().plugins,tooltip:{...baseOpts().plugins.tooltip,callbacks:{label:c=>` ${c.parsed.y}% · ${fmt(siteVals[c.dataIndex].length)} appts`}}}})});
+  const ch=[['Portal self-scheduled',portal],['Phone / front desk',ap.filter(a=>!a.viaPortal)]];
+  mk('cChannel',{type:'bar',data:{labels:ch.map(c=>c[0]),datasets:[barDs(ch.map(c=>+(100*nsr(c[1])).toFixed(1)),[css('--s1'),css('--s2')])]},
+    options:baseOpts({indexAxis:'y',scales:{y:{grid:{display:false},ticks:{color:css('--ink-2')},border:{color:css('--axis')}},x:pctAxis()},plugins:{...baseOpts().plugins,tooltip:{...baseOpts().plugins.tooltip,callbacks:{label:c=>` ${c.parsed.x}% no-show · ${pct(ch[c.dataIndex][1].length/Math.max(1,ap.length))} of bookings`}}}})});
+  charts.cChannel.data.datasets[0].borderRadius={topRight:4,bottomRight:4}; charts.cChannel.data.datasets[0].borderSkipped='left'; charts.cChannel.update();
+}
+
+/* ============================== GAPS ============================== */
+let gapRows=[];
+function priority(p,g){ const since=(ASOF-p.lastVisit)/864e5; return +(g.reduce((a,id)=>a+WEIGHT[id],0) + (p.nextAppt?0:2) + Math.min(3,since/60) + (p.chw?-.5:0)).toFixed(1); }
+function renderGaps(){
+  const pts=P();
+  gapRows = pts.map(p=>({p,g:openGaps(p)})).filter(r=>r.g.length)
+    .filter(r=>state.gMeasure==='all'||r.g.includes(state.gMeasure))
+    .filter(r=>state.gAppt==='all'||(state.gAppt==='yes')===r.p.nextAppt)
+    .filter(r=>!state.gSearch||r.p.id.includes(state.gSearch))
+    .map(r=>({...r,pri:priority(r.p,r.g)}));
+  const k = state.gSort;
+  gapRows.sort((a,b)=> k==='pri'?b.pri-a.pri : k==='gaps'?b.g.length-a.g.length : k==='last'?a.p.lastVisit-b.p.lastVisit : a.p.id.localeCompare(b.p.id));
+  const closable = gapRows.filter(r=>r.p.nextAppt).length;
+  $('gKpis').innerHTML=[
+    ['Patients on list', fmt(gapRows.length)],
+    ['Closable at a booked visit', fmt(closable)],
+    ['Need outreach (no appt)', fmt(gapRows.length-closable)],
+    ['Avg open gaps / patient', (gapRows.reduce((a,r)=>a+r.g.length,0)/Math.max(1,gapRows.length)).toFixed(2)],
+  ].map(t=>`<div class="card tile" style="background:var(--surface-2)"><div class="lbl">${t[0]}</div><div class="val" style="font-size:22px">${t[1]}</div></div>`).join('');
+  const show = gapRows.slice(0,200);
+  const th=(key,label,cls='')=>`<th class="${cls}" data-sort="${key}" style="cursor:pointer">${label}${state.gSort===key?' ↓':''}</th>`;
+  $('gTable').innerHTML = `<thead><tr>${th('id','Patient ID')}<th>Site</th><th>Age/Sex</th><th>Language</th><th>Payer</th>${th('gaps','Open gaps')}${th('last','Last visit')}<th>Next appt</th><th>CHW</th>${th('pri','Priority','num')}</tr></thead><tbody>`+
+    show.map(r=>`<tr><td><code>${r.p.id}</code></td><td>${siteName(r.p.site)}</td><td>${r.p.age} ${r.p.sex}</td><td>${r.p.lang}</td><td>${r.p.payer.split(' ')[0]}</td><td>${r.g.map(id=>`<span class="chip" title="${MBYID[id].name}">${MBYID[id].ecqm}</span>`).join('')}</td><td>${r.p.lastVisit.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</td><td>${r.p.nextAppt?'<span class="status s-good"><i>✓</i>Booked</span>':'<span class="muted">—</span>'}</td><td>${r.p.chw?'Enrolled':'<span class="muted">—</span>'}</td><td class="num"><b>${r.pri}</b></td></tr>`).join('')+'</tbody>';
+  $('gTable').querySelectorAll('th[data-sort]').forEach(t=>t.onclick=()=>{state.gSort=t.dataset.sort;renderGaps()});
+  $('gFoot').textContent = gapRows.length>200 ? `Showing top 200 of ${fmt(gapRows.length)}. Export CSV for the full list.` : `${fmt(gapRows.length)} patients.`;
+}
+function exportCsv(){
+  const head=['patient_id','site','age','sex','language','payer','open_gaps','last_visit','next_appt','chw','priority'];
+  const lines=[head.join(',')].concat(gapRows.map(r=>[r.p.id,siteName(r.p.site),r.p.age,r.p.sex,r.p.lang,r.p.payer,r.g.map(id=>MBYID[id].ecqm).join('|'),r.p.lastVisit.toISOString().slice(0,10),r.p.nextAppt?'Y':'N',r.p.chw?'Y':'N',r.pri].map(v=>`"${v}"`).join(',')));
+  const blob=new Blob([lines.join('\n')],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='care_gap_worklist_SYNTHETIC.csv'; a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* ============================== SIM ============================== */
+const simDefs=[
+  ['contacts','Outreach attempts per week',0,300,5,40,v=>v],
+  ['reach','Reached (answered / replied)',10,90,1,40,v=>v+'%'],
+  ['sched','Reached → visit or test scheduled',10,90,1,45,v=>v+'%'],
+  ['show','Scheduled → kept / kit returned',40,98,1,75,v=>v+'%'],
+  ['close','Kept → gap closed (result documented)',40,100,1,70,v=>v+'%'],
+  ['atvisit','Booked-visit gaps closed by standing orders',0,90,1,15,v=>v+'%'],
+];
+const simVals=Object.fromEntries(simDefs.map(d=>[d[0],d[5]]));
+function initSim(){
+  $('simInputs').innerHTML = simDefs.map(d=>`<label>${d[1]} <span class="v" id="sv-${d[0]}">${d[6](d[5])}</span><input type="range" id="si-${d[0]}" min="${d[2]}" max="${d[3]}" step="${d[4]}" value="${d[5]}"></label>`).join('');
+  simDefs.forEach(d=>$('si-'+d[0]).oninput=e=>{simVals[d[0]]=+e.target.value;$('sv-'+d[0]).textContent=d[6](+e.target.value);renderSim()});
+}
+function renderSim(){
+  const m=MBYID[state.sMeasure], pts=P(), st=measureStats(m,pts);
+  const open = pts.filter(p=>m.id in p.m && !p.m[m.id]);
+  const booked = open.filter(p=>p.nextAppt).length, unbooked=open.length-booked;
+  const weeks = Math.floor(daysLeft()/7) - 1; // last week reserved for documentation lag
+  const yieldPer = (simVals.reach/100)*(simVals.sched/100)*(simVals.show/100)*(simVals.close/100);
+  const fromBooked = Math.round(booked*(simVals.atvisit/100));
+  let pool=unbooked, outreach=0; const series=[+(100*st.num/Math.max(1,st.den)).toFixed(1)];
+  for(let w=1;w<=weeks;w++){ const attempts=Math.min(simVals.contacts, pool); pool-=attempts; outreach+=attempts*yieldPer;
+    const cum = st.num + fromBooked*(w/weeks) + outreach; series.push(+(100*Math.min(cum,st.den)/Math.max(1,st.den)).toFixed(1)); }
+  const baseOnly = 100*(st.num+fromBooked)/Math.max(1,st.den);
+  const proj=series[series.length-1], t=targets[m.id];
+  const need = Math.max(0, Math.ceil(t/100*st.den) - st.num - fromBooked);
+  const reqContacts = yieldPer>0 ? Math.ceil(need/yieldPer/Math.max(1,weeks)) : Infinity;
+  const feasible = need/Math.max(1e-9,yieldPer) <= unbooked;
+  $('sProj').textContent=proj.toFixed(1)+'%'; $('sTarget').textContent=t+'%';
+  $('sStatus').innerHTML = statusBadge(proj>=t, !(proj>=t) && t-proj<=3);
+  $('sNote').textContent = `${m.name} · current ${pct(st.rate)} on n=${fmt(st.den)} · ${weeks} working weeks left (final week held for documentation lag).`;
+  mk('cSim',{type:'line',data:{labels:series.map((_,i)=>i===0?'Now':'W'+i),datasets:[
+    {label:'Projected rate',data:series,borderColor:css('--s1'),backgroundColor:css('--s1'),borderWidth:2,pointRadius:0,pointHoverRadius:4,tension:.2},
+    {label:'Target',data:series.map(()=>t),borderColor:css('--muted'),borderDash:[4,4],borderWidth:1.5,pointRadius:0}]},
+    options:baseOpts({scales:{x:{...baseOpts().scales.x,ticks:{color:css('--muted'),maxTicksLimit:8}},y:{...pctAxis(),beginAtZero:false,suggestedMin:Math.floor(Math.min(series[0],t)-3),suggestedMax:Math.ceil(Math.max(proj,t)+3)}},plugins:{...baseOpts().plugins,legend:{display:true,position:'bottom',labels:baseOpts().plugins.legend.labels}}})});
+  $('sKv').innerHTML = [
+    ['Open gaps (booked / unbooked)', `${fmt(booked)} / ${fmt(unbooked)}`],
+    ['Closed via booked visits', fmt(fromBooked)],
+    ['Year-end rate with no outreach', baseOnly.toFixed(1)+'%'],
+    ['Closed via outreach', fmt(Math.round(outreach))],
+    ['Yield per outreach attempt', pct(yieldPer)],
+    ['Gaps still needed from outreach', fmt(need)],
+    ['Attempts/week required to hit target', need===0?'Already on track':(!feasible?'Not reachable — pool too small at this yield':fmt(reqContacts))],
+    ['CHW hours/week at 4 attempts/hr', need===0?'—':(feasible?Math.ceil(reqContacts/4)+' hrs':'—')],
+  ].map(x=>`<div>${x[0]}</div><div>${x[1]}</div>`).join('');
+}
+
+/* ============================== MEDICAID ============================== */
+function renderMedicaid(){
+  const pts=P().filter(p=>p.redetDays!=null);
+  const months=['Oct','Nov','Dec','Jan','Feb','Mar'];
+  const statuses=['Not started','Contacted','Submitted','Approved'];
+  const cols=[css('--s2'),css('--s4'),css('--s1'),css('--s3')];
+  const bym = months.map((_,i)=>pts.filter(p=>p.redetDays>=i*30.4 && p.redetDays<(i+1)*30.4));
+  mk('cRedet',{type:'bar',data:{labels:months.map((m,i)=>m+(i<3?' 2026':' 2027')),datasets:statuses.map((s,si)=>({label:s,data:bym.map(x=>x.filter(p=>p.redetStatus===s).length),backgroundColor:cols[si],borderColor:css('--surface'),borderWidth:{top:2},borderSkipped:false,borderRadius:si===statuses.length-1?{topLeft:4,topRight:4}:0,maxBarThickness:46}))},
+    options:baseOpts({scales:{x:{...baseOpts().scales.x,stacked:true},y:{...baseOpts().scales.y,stacked:true}},plugins:{...baseOpts().plugins,legend:{display:true,position:'bottom',labels:baseOpts().plugins.legend.labels}}})});
+  const due90 = pts.filter(p=>p.redetDays<=90), atRisk = due90.filter(p=>p.redetStatus==='Not started'||p.redetStatus==='Contacted');
+  const notStarted30 = pts.filter(p=>p.redetDays<=30 && p.redetStatus==='Not started').length;
+  $('mKpis').innerHTML=[
+    ['Medicaid patients', fmt(pts.length), 'in current filter'],
+    ['Renewals due ≤90 days', fmt(due90.length), `${pct(due90.length/Math.max(1,pts.length))} of Medicaid panel`],
+    ['Not yet submitted', fmt(atRisk.length), 'due ≤90 days — counselor queue'],
+    ['Due ≤30 days, not started', fmt(notStarted30), 'call list for Casa Maravilla walk-in desk'],
+  ].map(t=>`<div class="card tile"><div class="lbl">${t[0]}</div><div class="val">${t[1]}</div><div class="delta">${t[2]}</div></div>`).join('');
+  const pps=+$('mPps').value, slide=+$('mSlide').value, lapse=+$('mLapse').value/100;
+  $('vPps').textContent=money(pps); $('vSlide').textContent=money(slide); $('vLapse').textContent=Math.round(lapse*100)+'%';
+  const vpy = atRisk.length? atRisk.reduce((a,p)=>a+p.visits,0)/atRisk.length*(12/9) : 0;
+  const lapsed = atRisk.length*lapse;
+  const loss = lapsed*vpy*(pps-slide);
+  $('mKv').innerHTML=[
+    ['Not-submitted renewals (≤90d)', fmt(atRisk.length)],
+    ['Expected lapses at assumed rate', fmt(Math.round(lapsed))],
+    ['Visits / patient / yr (annualized from YTD)', vpy.toFixed(1)],
+    ['Net revenue per lapsed visit', money(pps-slide)],
+    ['Annualized revenue at risk', money(loss)],
+    ['Each renewal saved is worth', money(vpy*(pps-slide))],
+  ].map(x=>`<div>${x[0]}</div><div>${x[1]}</div>`).join('');
+}
+
+/* ============================== DATA QUALITY ============================== */
+function renderDQ(){
+  const pts=P(), n=Math.max(1,pts.length);
+  const dmDen = pts.filter(p=>'dm' in p.m), scan=pts.filter(p=>p.dqA1cScanned).length;
+  const dmS = measureStats(MBYID.dm,pts);
+  const fixedRate = (dmS.num - scan*.7)/Math.max(1,dmS.den);
+  const checks=[
+    ['Race / ethnicity missing or "unreported"', pts.filter(p=>p.dqRace).length, 0.05, 'UDS Table 3B completeness'],
+    ['Sexual orientation / gender identity not collected', pts.filter(p=>p.dqSogi).length, 0.15, 'UDS Table 3B SOGI — common collection gap'],
+    ['Invalid or missing ZIP code', pts.filter(p=>p.dqZip).length, 0.02, 'UDS ZIP table, UDS Mapper'],
+    ['No attributed PCP', pts.filter(p=>p.dqAttr).length, 0.03, 'Panel management, worklists'],
+    ['HbA1c result only in scanned document', scan, 0.01, 'CMS122 — counted as untested', dmDen.length],
+    ['Encounters without countable-visit flag', Math.round(appts.length*.006), 0.01, 'UDS Table 5 visit counts', appts.length],
+  ];
+  $('dqTable').innerHTML = `<thead><tr><th>Check</th><th class="num">Records</th><th class="num">Rate</th><th class="num">Tolerance</th><th>Status</th><th>Affects</th></tr></thead><tbody>`+
+    checks.map(c=>{const den=c[4]||n, r=c[1]/den; const ok=r<=c[2]; return `<tr><td>${c[0]}</td><td class="num">${fmt(c[1])}</td><td class="num">${pct(r)}</td><td class="num muted">≤ ${pct(c[2],0)}</td><td>${ok?'<span class="status s-good"><i>✓</i>Pass</span>':(r<=c[2]*1.5?'<span class="status s-warn"><i>!</i>Watch</span>':'<span class="status s-crit"><i>✕</i>Fail</span>')}</td><td class="muted">${c[3]}</td></tr>`}).join('')+'</tbody>';
+  $('dqStory').innerHTML=[
+    `<b>${fmt(scan)}</b> diabetic patients have an HbA1c in a scanned outside-lab PDF, not a structured result. CMS122 treats them as <b>untested → poor control</b>.`,
+    `Reported rate today: <b>${pct(dmS.rate)}</b>. If those results were abstracted (assume 70% are ≤9%): <b>${pct(fixedRate)}</b> — a <b>${((dmS.rate-fixedRate)*100).toFixed(1)}-pt</b> improvement with no change in care.`,
+    `Fix is process, not heroics: a structured-result entry step for outside labs and a monthly "scanned A1c" exception report sent to the clinical team.`,
+  ].map(x=>`<div class="insight">${x}</div>`).join('');
+}
+
+/* ============================== METHOD ============================== */
+function renderMethod(){
+  $('defTable').innerHTML='<thead><tr><th>Measure</th><th>Definition</th></tr></thead><tbody>'+MEASURES.map(m=>`<tr><td><b>${m.ecqm}</b><div class="muted" style="font-size:11px">${m.name}</div></td><td style="font-size:12.5px">${m.def}</td></tr>`).join('')+'</tbody>';
+  $('nPat').textContent=fmt(patients.length); $('nAppt').textContent=fmt(appts.length);
+}
+
+/* ============================== WIRING ============================== */
+let active='overview';
+function render(){
+  $('fCount').textContent = `${fmt(P().length)} patients · ${fmt(A().length)} appointments in view`;
+  ({overview:renderOverview,quality:renderQuality,access:renderAccess,gaps:renderGaps,sim:renderSim,medicaid:renderMedicaid,dq:renderDQ,method:renderMethod})[active]();
+}
+function go(tab){
+  active=tab;
+  document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===tab));
+  document.querySelectorAll('.tabpanel').forEach(p=>p.classList.toggle('on',p.id==='p-'+tab));
+  $('filters').style.display = tab==='method'?'none':'flex';
+  try{ history.replaceState(null,'','#'+tab);}catch(e){}
+  render();
+}
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>go(b.dataset.tab));
+document.querySelectorAll('[data-goto]').forEach(a=>a.onclick=e=>{e.preventDefault();go(a.dataset.goto)});
+['mPps','mSlide','mLapse'].forEach(id=>$(id).oninput=renderMedicaid);
+$('themeBtn').onclick=()=>{ const cur=document.documentElement.dataset.theme; const next=cur==='dark'?'light':'dark'; document.documentElement.dataset.theme=next; try{localStorage.setItem('qcc-theme',next)}catch(e){} render(); };
+try{ const t=localStorage.getItem('qcc-theme'); if(t) document.documentElement.dataset.theme=t; }catch(e){}
+// heatmap tooltip
+const tt=$('tt');
+document.addEventListener('mousemove',e=>{ const c=e.target.closest('[data-tt]'); if(!c){tt.style.display='none';return;} tt.textContent=c.dataset.tt; tt.style.display='block'; tt.style.left=Math.min(innerWidth-tt.offsetWidth-8,e.clientX+12)+'px'; tt.style.top=(e.clientY+14)+'px'; });
+
+$('asof').textContent = ASOF.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+$('daysleft').textContent = daysLeft()+' days left in UDS period';
+$('seed').textContent = SEED;
+initFilters(); initSim();
+const start = (location.hash||'').slice(1);
+go(['overview','quality','access','gaps','sim','medicaid','dq','method'].includes(start)?start:'overview');
+</script>
+</body>
+</html>
